@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+interface Author {
+  name: string;
+}
+
 interface Result {
   id: number;
   title: string;
-  pertinence: number;
+  authors: Author[];
+  language: string;
   content: string;
 }
 
@@ -28,28 +33,28 @@ const SearchAdvanced: React.FC = () => {
     try {
       const regex = new RegExp(searchQuery, 'i');
       const mockResults = [
-        { id: 1, title: 'Livre 1', pertinence: 95, content: 'Un extrait de contenu...' },
-        { id: 2, title: 'Livre 2', pertinence: 87, content: 'Another excerpt...' },
-        { id: 3, title: 'Livre 3', pertinence: 78, content: 'Un exemple de contenu pertinent...' },
-        { id: 4, title: 'Livre 4', pertinence: 65, content: 'Another pertinent excerpt...' },
-        { id: 5, title: 'Livre 5', pertinence: 92, content: 'Un exemple de contenu trouvé...' },
-        { id: 6, title: 'Livre 6', pertinence: 83, content: 'Another found excerpt...' },
-        { id: 7, title: 'Livre 7', pertinence: 70, content: 'Mot-clé trouvé dans ce contexte...' },
-        { id: 8, title: 'Livre 8', pertinence: 88, content: 'Keyword in another context...' },
-        { id: 9, title: 'Livre 9', pertinence: 60, content: 'Dernier exemple de résultat...' },
-        { id: 10, title: 'Livre 10', pertinence: 75, content: 'Last result excerpt...' },
-        { id: 11, title: 'Livre 11', pertinence: 91, content: 'Dernier exemple pertinent...' },
-        { id: 12, title: 'Livre 12', pertinence: 82, content: 'Last pertinent result...' },
-        { id: 13, title: 'Livre 13', pertinence: 67, content: 'Dernier résultat dans ce contexte...' },
+        { id: 1, title: 'Livre 1', authors: [{ name: 'Auteur 1' }], language: 'fr', content: 'Un extrait de contenu...' },
+        { id: 2, title: 'Livre 2', authors: [{ name: 'Author 2' }], language: 'en', content: 'Another excerpt...' },
+        { id: 3, title: 'Livre 3', authors: [{ name: 'Auteur 3' }], language: 'fr', content: 'Un exemple de contenu pertinent...' },
+        { id: 4, title: 'Livre 4', authors: [{ name: 'Author 4' }], language: 'en', content: 'Another pertinent excerpt...' },
+        { id: 5, title: 'Livre 5', authors: [{ name: 'Auteur 5' }], language: 'fr', content: 'Un exemple de contenu trouvé...' },
+        { id: 6, title: 'Livre 6', authors: [{ name: 'Author 6' }], language: 'en', content: 'Another found excerpt...' },
+        { id: 7, title: 'Livre 7', authors: [{ name: 'Auteur 7' }], language: 'fr', content: 'Mot-clé trouvé dans ce contexte...' },
+        { id: 8, title: 'Livre 8', authors: [{ name: 'Author 8' }], language: 'en', content: 'Keyword in another context...' },
+        { id: 9, title: 'Livre 9', authors: [{ name: 'Auteur 9' }], language: 'fr', content: 'Dernier exemple de résultat...' },
+        { id: 10, title: 'Livre 10', authors: [{ name: 'Author 10' }], language: 'en', content: 'Last result excerpt...' },
+        { id: 11, title: 'Livre 11', authors: [{ name: 'Auteur 11' }], language: 'fr', content: 'Dernier exemple pertinent...' },
+        { id: 12, title: 'Livre 12', authors: [{ name: 'Author 12' }], language: 'en', content: 'Last pertinent result...' },
+        { id: 13, title: 'Livre 13', authors: [{ name: 'Auteur 13' }], language: 'fr', content: 'Dernier résultat dans ce contexte...' },
       ].filter((r) => (searchMode === 'index' ? regex.test(r.title) : regex.test(r.content)));
 
-      const sortedResults = mockResults.sort((a, b) => b.pertinence - a.pertinence);
+      const sortedResults = [...mockResults].sort((a, b) => a.title.localeCompare(b.title)); // Tri par défaut
       setResults(sortedResults);
 
       const topIds = sortedResults.slice(0, 2).map((r) => r.id);
       const mockSuggestions = [
-        { id: 14, title: 'Livre 14', pertinence: 55, content: 'Suggestion liée...' },
-        { id: 15, title: 'Livre 15', pertinence: 62, content: 'Autre suggestion...' },
+        { id: 14, title: 'Livre 14', authors: [{ name: 'Auteur 14' }], language: 'fr', content: 'Suggestion liée...' },
+        { id: 15, title: 'Livre 15', authors: [{ name: 'Author 15' }], language: 'en', content: 'Autre suggestion...' },
       ].filter((s) => !topIds.includes(s.id));
       setSuggestions(mockSuggestions);
     } catch (error) {
@@ -71,13 +76,15 @@ const SearchAdvanced: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-t from-teal-50 to-yellow-50">
+    // <div className="min-h-screen bg-gradient-to-t from-teal-50 to-yellow-50">
+    <div className="min-h-screen">
       <header className="py-10 text-center">
         <h1 className="text-4xl font-extrabold text-teal-600 animate-bounce">
           Recherche Avancée
         </h1>
       </header>
-      <div className="sticky top-0 z-10 bg-gradient-to-t from-teal-50 to-yellow-50 py-4">
+      {/* <div className="sticky bg-gradient-to-t from-teal-50 to-yellow-50 py-4"> */}
+      <div className="sticky py-4">
         <div className="container mx-auto px-6">
           <div className="flex justify-center">
             <div className="w-full max-w-lg space-y-4">
@@ -147,17 +154,19 @@ const SearchAdvanced: React.FC = () => {
               {results.map((result) => (
                 <li
                   key={result.id}
-                  className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="p-6 bg-white bg-opacity-90 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <div className="flex flex-col space-y-2">
                     <div className="flex justify-between items-center">
                       <h3 className="text-lg font-semibold text-teal-700">
                         {result.title}
                       </h3>
-                      <span className="text-sm text-teal-500">
-                        Pertinence: {result.pertinence}%
-                      </span>
+                      <span className="text-sm text-teal-500">({result.language})</span>
                     </div>
+                    <p className="text-sm text-gray-500">
+                      {result.content.length > 20 ? `${result.content.slice(0, 20)}...` : result.content}
+                    </p>
+                    <p className="text-sm text-gray-600">Auteur: {result.authors[0]?.name || 'Inconnu'}</p>
                     <Link
                       to={`/book/${result.id}`}
                       className="text-yellow-500 hover:text-yellow-600 font-medium text-right"
@@ -177,17 +186,21 @@ const SearchAdvanced: React.FC = () => {
                   {suggestions.map((suggestion) => (
                     <li
                       key={suggestion.id}
-                      className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="p-6 bg-white bg-opacity-90 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                     >
                       <div className="flex flex-col space-y-2">
                         <div className="flex justify-between items-center">
                           <h3 className="text-lg font-semibold text-teal-700">
                             {suggestion.title}
                           </h3>
-                          <span className="text-sm text-teal-500">
-                            Pertinence: {suggestion.pertinence}%
-                          </span>
+                          <span className="text-sm text-teal-500">({suggestion.language})</span>
                         </div>
+                        <p className="text-sm text-gray-500">
+                          {suggestion.content.length > 20
+                            ? `${suggestion.content.slice(0, 20)}...`
+                            : suggestion.content}
+                        </p>
+                        <p className="text-sm text-gray-600">Auteur: {suggestion.authors[0]?.name || 'Inconnu'}</p>
                         <Link
                           to={`/book/${suggestion.id}`}
                           className="text-yellow-500 hover:text-yellow-600 font-medium text-right"

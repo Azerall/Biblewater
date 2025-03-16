@@ -18,7 +18,8 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-t from-teal-50 to-yellow-50 flex flex-col items-center justify-center">
+    // <div className="min-h-screen bg-gradient-to-t from-teal-50 to-yellow-50 flex flex-col items-center justify-center">
+    <div className="min-h-screen flex flex-col items-center justify-center">
       <header className="py-10 text-center">
         <h1 className="text-5xl font-extrabold text-teal-600 animate-bounce">
           Biblewater

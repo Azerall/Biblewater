@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+interface Author {
+  name: string;
+}
+
 interface Result {
   id: number;
   title: string;
+  authors: Author[];
   language: string;
-  excerpt: string;
-  occurrences: number;
+  content: string;
 }
 
 const SearchSuggestions: React.FC = () => {
@@ -25,28 +29,28 @@ const SearchSuggestions: React.FC = () => {
 
   const generateSuggestions = (searchQuery: string) => {
     const mockResults = [
-      { id: 1, title: 'Livre 1', language: 'fr', excerpt: 'Un extrait de contenu...', occurrences: 5 },
-      { id: 2, title: 'Livre 2', language: 'en', excerpt: 'Un autre extrait de contenu...', occurrences: 3 },
-      { id: 3, title: 'Livre 3', language: 'fr', excerpt: 'Un exemple de contenu pertinent...', occurrences: 8 },
-      { id: 4, title: 'Livre 4', language: 'en', excerpt: 'Un autre exemple de contenu pertinent...', occurrences: 2 },
-      { id: 5, title: 'Livre 5', language: 'fr', excerpt: 'Un exemple de contenu trouvé...', occurrences: 6 },
-      { id: 6, title: 'Livre 6', language: 'en', excerpt: 'Un autre exemple de contenu trouvé...', occurrences: 4 },
-      { id: 7, title: 'Livre 7', language: 'fr', excerpt: 'Mot-clé trouvé dans ce contexte...', occurrences: 7 },
-      { id: 8, title: 'Livre 8', language: 'en', excerpt: 'Mot-clé trouvé dans un autre contexte...', occurrences: 1 },
-      { id: 9, title: 'Livre 9', language: 'fr', excerpt: 'Dernier exemple de résultat...', occurrences: 9 },
-      { id: 10, title: 'Livre 10', language: 'en', excerpt: 'Dernier exemple de résultat trouvé...', occurrences: 3 },
+      { id: 1, title: 'Livre 1', authors: [{ name: 'Auteur 1' }], language: 'fr', content: 'Un extrait de contenu...' },
+      { id: 2, title: 'Livre 2', authors: [{ name: 'Author 2' }], language: 'en', content: 'Un autre extrait de contenu...' },
+      { id: 3, title: 'Livre 3', authors: [{ name: 'Auteur 3' }], language: 'fr', content: 'Un exemple de contenu pertinent...' },
+      { id: 4, title: 'Livre 4', authors: [{ name: 'Author 4' }], language: 'en', content: 'Un autre exemple de contenu pertinent...' },
+      { id: 5, title: 'Livre 5', authors: [{ name: 'Auteur 5' }], language: 'fr', content: 'Un exemple de contenu trouvé...' },
+      { id: 6, title: 'Livre 6', authors: [{ name: 'Author 6' }], language: 'en', content: 'Un autre exemple de contenu trouvé...' },
+      { id: 7, title: 'Livre 7', authors: [{ name: 'Auteur 7' }], language: 'fr', content: 'Mot-clé trouvé dans ce contexte...' },
+      { id: 8, title: 'Livre 8', authors: [{ name: 'Author 8' }], language: 'en', content: 'Mot-clé trouvé dans un autre contexte...' },
+      { id: 9, title: 'Livre 9', authors: [{ name: 'Auteur 9' }], language: 'fr', content: 'Dernier exemple de résultat...' },
+      { id: 10, title: 'Livre 10', authors: [{ name: 'Author 10' }], language: 'en', content: 'Dernier exemple de résultat trouvé...' },
     ].filter((r) =>
-      r.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const sortedResults = mockResults.sort((a, b) => b.occurrences - a.occurrences);
+    const sortedResults = mockResults.sort((a, b) => b.content.length - a.content.length); // Tri par longueur du contenu
     const topIds = sortedResults.slice(0, 2).map((r) => r.id);
 
     const mockSuggestions = [
-      { id: 11, title: 'Livre 11', language: 'fr', excerpt: 'Suggestion liée...', occurrences: 2 },
-      { id: 12, title: 'Livre 12', language: 'en', excerpt: 'Autre suggestion...', occurrences: 1 },
-      { id: 13, title: 'Livre 13', language: 'fr', excerpt: 'Suggestion pertinente...', occurrences: 4 },
+      { id: 11, title: 'Livre 11', authors: [{ name: 'Auteur 11' }], language: 'fr', content: 'Suggestion liée...' },
+      { id: 12, title: 'Livre 12', authors: [{ name: 'Author 12' }], language: 'en', content: 'Autre suggestion...' },
+      { id: 13, title: 'Livre 13', authors: [{ name: 'Auteur 13' }], language: 'fr', content: 'Suggestion pertinente...' },
     ].filter((s) => !topIds.includes(s.id));
 
     setSuggestions(mockSuggestions);
@@ -64,13 +68,15 @@ const SearchSuggestions: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-t from-teal-50 to-yellow-50">
+    // <div className="min-h-screen bg-gradient-to-t from-teal-50 to-yellow-50">
+    <div className="min-h-screen">
       <header className="py-10 text-center">
         <h1 className="text-4xl font-extrabold text-teal-600 animate-bounce">
           Suggestions de Recherche
         </h1>
       </header>
-      <div className="sticky top-0 z-10 bg-gradient-to-t from-teal-50 to-yellow-50 py-4">
+      {/* <div className="sticky bg-gradient-to-t from-teal-50 to-yellow-50 py-4"> */}
+      <div className="sticky py-4">
         <div className="container mx-auto px-6">
           <div className="flex justify-center">
             <div className="w-full max-w-lg space-y-4">
@@ -121,7 +127,7 @@ const SearchSuggestions: React.FC = () => {
               {suggestions.map((suggestion) => (
                 <li
                   key={suggestion.id}
-                  className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="p-6 bg-white bg-opacity-90 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <div className="flex flex-col space-y-2">
                     <div className="flex justify-between items-center">
@@ -131,10 +137,11 @@ const SearchSuggestions: React.FC = () => {
                       <span className="text-sm text-teal-500">({suggestion.language})</span>
                     </div>
                     <p className="text-sm text-gray-500">
-                      {suggestion.excerpt.length > 20
-                        ? `${suggestion.excerpt.slice(0, 20)}...`
-                        : suggestion.excerpt}
+                      {suggestion.content.length > 20
+                        ? `${suggestion.content.slice(0, 20)}...`
+                        : suggestion.content}
                     </p>
+                    <p className="text-sm text-gray-600">Auteur: {suggestion.authors[0]?.name || 'Inconnu'}</p>
                     <Link
                       to={`/book/${suggestion.id}`}
                       className="text-yellow-500 hover:text-yellow-600 font-medium text-right"
