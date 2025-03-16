@@ -9,10 +9,9 @@ interface Result {
   occurrences: number;
 }
 
-const SearchSimple: React.FC = () => {
+const SearchSuggestions: React.FC = () => {
   const [query, setQuery] = useState<string>('');
-  const [searchType, setSearchType] = useState<string>('Recherche');
-  const [results, setResults] = useState<Result[]>([]);
+  const [searchType, setSearchType] = useState<string>('Suggestions');
   const [suggestions, setSuggestions] = useState<Result[]>([]);
   const location = useLocation();
   const navigate = useNavigate();
@@ -21,39 +20,35 @@ const SearchSimple: React.FC = () => {
     const params = new URLSearchParams(location.search);
     const q = params.get('query') || '';
     setQuery(q);
-    if (q) handleSearch(q);
+    if (q) generateSuggestions(q);
   }, [location.search]);
 
-  const handleSearch = (searchQuery: string) => {
+  const generateSuggestions = (searchQuery: string) => {
     const mockResults = [
       { id: 1, title: 'Livre 1', language: 'fr', excerpt: 'Un extrait de contenu...', occurrences: 5 },
       { id: 2, title: 'Livre 2', language: 'en', excerpt: 'Un autre extrait de contenu...', occurrences: 3 },
-      { id: 3, title: 'Élément 3', language: 'fr', excerpt: 'Un exemple de contenu pertinent...', occurrences: 8 },
+      { id: 3, title: 'Livre 3', language: 'fr', excerpt: 'Un exemple de contenu pertinent...', occurrences: 8 },
       { id: 4, title: 'Livre 4', language: 'en', excerpt: 'Un autre exemple de contenu pertinent...', occurrences: 2 },
-      { id: 5, title: 'Résumé 5', language: 'fr', excerpt: 'Un résumé trouvé...', occurrences: 6 },
+      { id: 5, title: 'Livre 5', language: 'fr', excerpt: 'Un exemple de contenu trouvé...', occurrences: 6 },
       { id: 6, title: 'Livre 6', language: 'en', excerpt: 'Un autre exemple de contenu trouvé...', occurrences: 4 },
-      { id: 7, title: 'Mot-clé trouvé', language: 'fr', excerpt: 'Mot-clé trouvé dans ce contexte...', occurrences: 7 },
+      { id: 7, title: 'Livre 7', language: 'fr', excerpt: 'Mot-clé trouvé dans ce contexte...', occurrences: 7 },
       { id: 8, title: 'Livre 8', language: 'en', excerpt: 'Mot-clé trouvé dans un autre contexte...', occurrences: 1 },
-      { id: 9, title: 'Dernier Résultat', language: 'fr', excerpt: 'Dernier exemple de résultat...', occurrences: 9 },
-      { id: 10, title: 'Résumé Étendu', language: 'en', excerpt: 'Dernier exemple de résultat trouvé...', occurrences: 3 },
-      { id: 11, title: 'Résumé Pertinent', language: 'fr', excerpt: 'Dernier exemple de résultat pertinent...', occurrences: 5 },
-      { id: 12, title: 'Résumé Avancé', language: 'en', excerpt: 'Dernier exemple de résultat pertinent trouvé...', occurrences: 2 },
-      { id: 13, title: 'Résumé Contextuel', language: 'fr', excerpt: 'Dernier exemple de résultat trouvé dans ce contexte...', occurrences: 4 },
-      { id: 14, title: 'Tést Accentué', language: 'fr', excerpt: 'Test avec des accents...', occurrences: 2 },
-      { id: 15, title: 'Résumé Étranger', language: 'fr', excerpt: 'Résumé avec des caractères spéciaux...', occurrences: 3 },
+      { id: 9, title: 'Livre 9', language: 'fr', excerpt: 'Dernier exemple de résultat...', occurrences: 9 },
+      { id: 10, title: 'Livre 10', language: 'en', excerpt: 'Dernier exemple de résultat trouvé...', occurrences: 3 },
     ].filter((r) =>
       r.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const sortedResults = mockResults.sort((a, b) => b.occurrences - a.occurrences);
-    setResults(sortedResults);
-
     const topIds = sortedResults.slice(0, 2).map((r) => r.id);
+
     const mockSuggestions = [
-      { id: 16, title: 'Livre 16', language: 'fr', excerpt: 'Suggestion liée...', occurrences: 2 },
-      { id: 17, title: 'Livre 17', language: 'en', excerpt: 'Autre suggestion...', occurrences: 1 },
+      { id: 11, title: 'Livre 11', language: 'fr', excerpt: 'Suggestion liée...', occurrences: 2 },
+      { id: 12, title: 'Livre 12', language: 'en', excerpt: 'Autre suggestion...', occurrences: 1 },
+      { id: 13, title: 'Livre 13', language: 'fr', excerpt: 'Suggestion pertinente...', occurrences: 4 },
     ].filter((s) => !topIds.includes(s.id));
+
     setSuggestions(mockSuggestions);
   };
 
@@ -72,7 +67,7 @@ const SearchSimple: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-t from-teal-50 to-yellow-50">
       <header className="py-10 text-center">
         <h1 className="text-4xl font-extrabold text-teal-600 animate-bounce">
-          Recherche Simple
+          Suggestions de Recherche
         </h1>
       </header>
       <div className="sticky top-0 z-10 bg-gradient-to-t from-teal-50 to-yellow-50 py-4">
@@ -117,28 +112,31 @@ const SearchSimple: React.FC = () => {
         </div>
       </div>
       <main className="container mx-auto px-6 py-12">
-        {results.length > 0 ? (
-          <>
-            <ul className="mt-12 max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {results.map((result) => (
+        {suggestions.length > 0 ? (
+          <div className="mt-12 max-w-5xl mx-auto">
+            <h2 className="text-2xl font-semibold text-teal-700 mb-4">
+              Suggestions similaires pour "{query}"
+            </h2>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {suggestions.map((suggestion) => (
                 <li
-                  key={result.id}
+                  key={suggestion.id}
                   className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <div className="flex flex-col space-y-2">
                     <div className="flex justify-between items-center">
                       <h3 className="text-lg font-semibold text-teal-700">
-                        {result.title}
+                        {suggestion.title}
                       </h3>
-                      <span className="text-sm text-teal-500">({result.language})</span>
+                      <span className="text-sm text-teal-500">({suggestion.language})</span>
                     </div>
                     <p className="text-sm text-gray-500">
-                      {result.excerpt.length > 20
-                        ? `${result.excerpt.slice(0, 20)}...`
-                        : result.excerpt}
+                      {suggestion.excerpt.length > 20
+                        ? `${suggestion.excerpt.slice(0, 20)}...`
+                        : suggestion.excerpt}
                     </p>
                     <Link
-                      to={`/book/${result.id}`}
+                      to={`/book/${suggestion.id}`}
                       className="text-yellow-500 hover:text-yellow-600 font-medium text-right"
                     >
                       Lire
@@ -147,48 +145,15 @@ const SearchSimple: React.FC = () => {
                 </li>
               ))}
             </ul>
-            {suggestions.length > 0 && (
-              <div className="mt-12 max-w-5xl mx-auto">
-                <h2 className="text-2xl font-semibold text-teal-700 mb-4">
-                  Suggestions similaires
-                </h2>
-                <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {suggestions.map((suggestion) => (
-                    <li
-                      key={suggestion.id}
-                      className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                    >
-                      <div className="flex flex-col space-y-2">
-                        <div className="flex justify-between items-center">
-                          <h3 className="text-lg font-semibold text-teal-700">
-                            {suggestion.title}
-                          </h3>
-                          <span className="text-sm text-teal-500">({suggestion.language})</span>
-                        </div>
-                        <p className="text-sm text-gray-500">
-                          {suggestion.excerpt.length > 20
-                            ? `${suggestion.excerpt.slice(0, 20)}...`
-                            : suggestion.excerpt}
-                        </p>
-                        <Link
-                          to={`/book/${suggestion.id}`}
-                          className="text-yellow-500 hover:text-yellow-600 font-medium text-right"
-                        >
-                          Lire
-                        </Link>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </>
+          </div>
         ) : (
-          <p className="text-center text-gray-700">Aucun résultat trouvé pour "{query}". Essayez une autre recherche.</p>
+          <p className="text-center text-gray-700">
+            Aucune suggestion trouvée pour "{query}". Essayez une autre recherche.
+          </p>
         )}
       </main>
     </div>
   );
 };
 
-export default SearchSimple;
+export default SearchSuggestions;
