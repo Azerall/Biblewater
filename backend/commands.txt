@@ -1,0 +1,7 @@
+source myTidyVEnv/bin/activate
+
+python3 manage.py makemigrations mygutenberg
+python3 manage.py migrate
+python3 manage.py populate_and_index_books
+python3 manage.py populate_jaccard
+python3 manage.py runserver

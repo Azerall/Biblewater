@@ -6,7 +6,7 @@ import requests
 import time
 
 class Command(BaseCommand):
-    help = 'Refresh the list of products which are on sale.'
+    help = 'Refresh the list of products which are available.'
 
     def handle(self, *args, **options):
         self.stdout.write('['+time.ctime()+'] Refreshing data...')

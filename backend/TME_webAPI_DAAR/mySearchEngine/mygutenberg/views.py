@@ -1,253 +1,226 @@
 import requests
+import re
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.http import Http404, JsonResponse
-from mygutenberg.models import LivreEnFrancais, LivreEnAnglais, BookText
-from mygutenberg.serializers import LivreEnFrancaisSerializer, LivreEnAnglaisSerializer
-import secrets
-from myImageBank.models import ImageEntry
+from django.http import Http404
+from django.db import models
+from mygutenberg.models import BookText, TableIndex, TableJaccard
+from mygutenberg.algorithms.centrality import build_graph, closeness_centrality, betweenness_centrality, pagerank
 
 # URL de base pour l'API Gutendex
 base_url = 'https://gutendex.com/books/'
 
-# Liste complète des livres
 class BooksList(APIView):
     def get(self, request, format=None):
-        response = requests.get(base_url)
-        jsondata = response.json()
-        return Response(jsondata['results'])  # Renvoie uniquement la liste des livres
+        books = BookText.objects.all()
+        return Response([{
+            'id': book.gutenberg_id,
+            'title': book.title,
+            'authors': book.authors,
+            'language': book.language
+        } for book in books])
 
-# Détails d'un livre spécifique
 class BookDetail(APIView):
     def get(self, request, pk, format=None):
         try:
-            response = requests.get(base_url + str(pk) + '/')
-            jsondata = response.json()
-            return Response(jsondata)
-        except requests.exceptions.RequestException:
+            book = BookText.objects.get(gutenberg_id=pk)
+            text_url = f'http://gutenberg.org/ebooks/{pk}.txt.utf-8'
+            content = requests.get(text_url).text
+            return Response({
+                'id': book.gutenberg_id,
+                'title': book.title,
+                'authors': book.authors,
+                'language': book.language,
+                'content': content
+            })
+        except BookText.DoesNotExist:
             raise Http404
+        except requests.RequestException:
+            return Response({'error': 'Unable to fetch content'}, status=500)
 
-# Liste des livres en français
 class FrenchBooksList(APIView):
     def get(self, request, format=None):
-        res = []
-        for book in LivreEnFrancais.objects.all():
-            serializer = LivreEnFrancaisSerializer(book)
-            response = requests.get(base_url + str(serializer.data['gutenbergID']) + '/')
-            jsondata = response.json()
-            res.append(jsondata)
-        return JsonResponse(res, safe=False)
+        books = BookText.objects.filter(language='fr')
+        return Response([{
+            'id': book.gutenberg_id,
+            'title': book.title,
+            'authors': book.authors,
+            'language': book.language
+        } for book in books])
 
-# Détails d'un livre en français
-class FrenchBookDetail(APIView):
-    def get_object(self, pk):
-        try:
-            return LivreEnFrancais.objects.get(pk=pk)
-        except LivreEnFrancais.DoesNotExist:
-            raise Http404
-
-    def get(self, request, pk, format=None):
-        book = self.get_object(pk)
-        serializer = LivreEnFrancaisSerializer(book)
-        response = requests.get(base_url + str(serializer.data['gutenbergID']) + '/')
-        jsondata = response.json()
-        return Response(jsondata)
-
-# Liste des livres en anglais
 class EnglishBooksList(APIView):
     def get(self, request, format=None):
-        res = []
-        for book in LivreEnAnglais.objects.all():
-            serializer = LivreEnAnglaisSerializer(book)
-            response = requests.get(base_url + str(serializer.data['gutenbergID']) + '/')
-            jsondata = response.json()
-            res.append(jsondata)
-        return JsonResponse(res, safe=False)
+        books = BookText.objects.filter(language='en')
+        return Response([{
+            'id': book.gutenberg_id,
+            'title': book.title,
+            'authors': book.authors,
+            'language': book.language
+        } for book in books])
 
-# Détails d'un livre en anglais
-class EnglishBookDetail(APIView):
-    def get_object(self, pk):
-        try:
-            return LivreEnAnglais.objects.get(pk=pk)
-        except LivreEnAnglais.DoesNotExist:
-            raise Http404
-
-    def get(self, request, pk, format=None):
-        book = self.get_object(pk)
-        serializer = LivreEnAnglaisSerializer(book)
-        response = requests.get(base_url + str(serializer.data['gutenbergID']) + '/')
-        jsondata = response.json()
-        return Response(jsondata)
-
-# Nouvelles vues pour l'Exercice 10
 class BookCoverImage(APIView):
     def get(self, request, book_id, format=None):
         try:
-            # Chercher une image de couverture (hypothèse : contient 'cover' dans l'URL)
-            cover_image = ImageEntry.objects.filter(
-                book_id=book_id,
-                url__contains='cover'
-            ).first()
-            if not cover_image:
-                raise Http404(f"Aucune image de couverture pour le livre {book_id}")
-            return Response({'url': cover_image.url})
-        except ImageEntry.DoesNotExist:
-            raise Http404(f"Aucune image de couverture pour le livre {book_id}")
+            book = BookText.objects.get(gutenberg_id=book_id)
+            gutendex_url = f'https://gutendex.com/books/{book_id}/'
+            response = requests.get(gutendex_url)
+            response.raise_for_status()
+            book_data = response.json()
+            formats = book_data.get('formats', {})
+            cover_url = formats.get('image/jpeg', None)
+            if not cover_url:
+                cover_url = f'https://gutenberg.org/files/{book_id}/{book_id}-h/images/cover.jpg'
+                try:
+                    requests.head(cover_url).raise_for_status()
+                except requests.RequestException:
+                    cover_url = None  # Pas de couverture trouvée
+            return Response({'id': book_id, 'cover_image': cover_url})
+        except BookText.DoesNotExist:
+            raise Http404
+        except requests.RequestException:
+            return Response({'error': 'Unable to fetch cover image'}, status=500)
 
-class BookRandomImage(APIView):
-    def get(self, request, book_id, format=None):
-        try:
-            images = ImageEntry.objects.filter(book_id=book_id)
-            if not images.exists():
-                raise Http404(f"Aucune image pour le livre {book_id}")
-            random_image = secrets.choice(images)
-            return Response({'url': random_image.url})
-        except IndexError:
-            raise Http404(f"Aucune image pour le livre {book_id}")
-
-class BookSpecificImage(APIView):
-    def get(self, request, book_id, image_id, format=None):
-        try:
-            image = ImageEntry.objects.get(book_id=book_id, id=image_id)
-            return Response({'url': image.url})
-        except ImageEntry.DoesNotExist:
-            raise Http404(f"Image {image_id} non trouvée pour le livre {book_id}")
-        
 class SearchByKeyword(APIView):
     def get(self, request, keyword, format=None):
         keyword = keyword.lower()
-        books = BookText.objects.all()
-        results = []
-        for book in books:
-            index = book.get_index()
-            if keyword in index:
+        try:
+            index = TableIndex.objects.get(word=keyword)
+            index_data = index.get_index_data()  # {book_id: {occurrences, tfidf, score}}
+            results = []
+            for book_id, data in index_data.items():
+                book = BookText.objects.get(gutenberg_id=book_id)
                 results.append({
                     'id': book.gutenberg_id,
                     'title': book.title,
-                    'author': book.author,
-                    'score': index[keyword]['score'],
-                    'occurrences': index[keyword]['occurrences']
+                    'authors': book.authors,
+                    'language': book.language,
+                    'score': data['score'],
+                    'occurrences': data['occurrences']
                 })
-            elif kmp_search(book.content.lower(), keyword) != -1:
-                occurrences = book.content.lower().count(keyword)
-                score = occurrences / book.word_count  # TF simple
-                results.append({
-                    'id': book.gutenberg_id,
-                    'title': book.title,
-                    'author': book.author,
-                    'score': score,
-                    'occurrences': occurrences
-                })
-        results = sorted(results, key=lambda x: x['score'], reverse=True)
-        return Response(results)
+            # Trier les résultats par score décroissant
+            results = sorted(results, key=lambda x: x['score'], reverse=True)
+            return Response(results)
+        except TableIndex.DoesNotExist:
+            return Response([])  # Aucun mot trouvé dans l’index
 
 class SearchByRegex(APIView):
     def get(self, request, regex, format=None):
         try:
             pattern = re.compile(regex)
-            books = BookText.objects.all()
-            results = []
-            for book in books:
-                index = book.get_index()
-                matches = [w for w in index.keys() if pattern.search(w)]
-                if matches:
-                    score = sum(index[w]['score'] for w in matches)
-                    results.append({
-                        'id': book.gutenberg_id,
-                        'title': book.title,
-                        'author': book.author,
-                        'score': score,
-                        'matches': len(matches)
-                    })
-                else:
-                    content_matches = pattern.findall(book.content)
-                    if content_matches:
-                        score = len(content_matches) / book.word_count
-                        results.append({
-                            'id': book.gutenberg_id,
-                            'title': book.title,
-                            'author': book.author,
-                            'score': score,
-                            'matches': len(content_matches)
-                        })
+            results = {}
+            indices = TableIndex.objects.all()
+
+            for index in indices:
+                word = index.word
+                if pattern.search(word):
+                    index_data = index.get_index_data()  # {book_id: {occurrences, tfidf, score}}
+                    for book_id, data in index_data.items():
+                        if book_id not in results:
+                            book = BookText.objects.get(gutenberg_id=book_id)
+                            results[book_id] = {
+                                'id': book.gutenberg_id,
+                                'title': book.title,
+                                'authors': book.authors,
+                                'language': book.language,
+                                'score': 0,
+                                'matches': 0
+                            }
+                        results[book_id]['score'] += data['score']
+                        results[book_id]['matches'] += 1
+
+            # Convertir en liste et trier par score
+            results = list(results.values())
             results = sorted(results, key=lambda x: x['score'], reverse=True)
             return Response(results)
         except re.error:
-            raise Http404("Expression régulière invalide")
+            raise Http404("Invalid regex")
 
-class SearchWithSuggestions(APIView):
-    def manual_jaccard(self, set1, set2):
-        intersection = len(set1 & set2)
-        union = len(set1 | set2)
-        return intersection / union if union > 0 else 0
-
-    def build_graph(self, books):
-        graph = {}  # Dictionnaire d'adjacence
-        for i, book1 in enumerate(books):
-            index1 = set(book1.get_index().keys())
-            graph[book1.gutenberg_id] = []
-            for book2 in books[i+1:]:
-                index2 = set(book2.get_index().keys())
-                if self.manual_jaccard(index1, index2) > 0.1:  # Seuil
-                    graph[book1.gutenberg_id].append(book2.gutenberg_id)
-                    if book2.gutenberg_id not in graph:
-                        graph[book2.gutenberg_id] = []
-                    graph[book2.gutenberg_id].append(book1.gutenberg_id)
-        return graph
-
-    def manual_pagerank(self, graph, damping=0.85, iterations=100):
-        N = len(graph)
-        if N == 0:
-            return {}
-        pr = {node: 1/N for node in graph}
-        for _ in range(iterations):
-            new_pr = {}
-            for node in graph:
-                rank_sum = sum(pr[neighbor] / len(graph[neighbor]) for neighbor in graph[node])
-                new_pr[node] = (1 - damping) / N + damping * rank_sum
-            pr = new_pr
-        return pr
-
-    def get(self, request, keyword, format=None):
+class SearchWithRanking(APIView):
+    def get(self, request, keyword, sort_by, format=None):
         keyword = keyword.lower()
-        books = list(BookText.objects.all())
-        results = []
-        for book in books:
-            index = book.get_index()
-            if keyword in index:
+        valid_sort_options = ['occurrences', 'closeness', 'betweenness', 'pagerank']
+        if sort_by not in valid_sort_options:
+            return Response({'error': f"Critère de tri invalide. Options valides : {valid_sort_options}"}, status=400)
+
+        try:
+            # Récupérer les résultats de recherche
+            index = TableIndex.objects.get(word=keyword)
+            index_data = index.get_index_data()
+            results = []
+            for book_id, data in index_data.items():
+                book = BookText.objects.get(gutenberg_id=book_id)
                 results.append({
                     'id': book.gutenberg_id,
                     'title': book.title,
-                    'author': book.author,
-                    'score': index[keyword]['score'],
-                    'occurrences': index[keyword]['occurrences']
+                    'authors': book.authors,
+                    'language': book.language,
+                    'score': data['score'],
+                    'occurrences': data['occurrences'],
+                    'closeness': book.closeness_centrality,
+                    'betweenness': book.betweenness_centrality,
+                    'pagerank': book.pagerank
                 })
 
-        results = sorted(results, key=lambda x: x['score'], reverse=True)
-        if not results:
+            if not results:
+                return Response({'results': []})
+
+            # Trier selon le critère choisi
+            if sort_by == 'occurrences':
+                results = sorted(results, key=lambda x: x['occurrences'], reverse=True)
+            elif sort_by == 'closeness':
+                results = sorted(results, key=lambda x: x['closeness'], reverse=True)
+            elif sort_by == 'betweenness':
+                results = sorted(results, key=lambda x: x['betweenness'], reverse=True)
+            elif sort_by == 'pagerank':
+                results = sorted(results, key=lambda x: x['pagerank'], reverse=True)
+
+            return Response({'results': results})
+        except TableIndex.DoesNotExist:
+            return Response({'results': []})
+
+class SearchWithSuggestions(APIView):
+    def get(self, request, keyword, format=None):
+        keyword = keyword.lower()
+        try:
+            index = TableIndex.objects.get(word=keyword)
+            index_data = index.get_index_data()  # {book_id: {occurrences, tfidf, score}}
+            results = []
+            for book_id, data in index_data.items():
+                book = BookText.objects.get(gutenberg_id=book_id)
+                results.append({
+                    'id': book.gutenberg_id,
+                    'title': book.title,
+                    'authors': book.authors,
+                    'language': book.language,
+                    'score': data['score'],
+                    'occurrences': data['occurrences']
+                })
+            # Trier les résultats par score décroissant
+            results = sorted(results, key=lambda x: x['score'], reverse=True)
+
+            # Sélectionner les 3 premiers livres pour les suggestions
+            top_books = [result['id'] for result in results[:min(3, len(results))]]
+            if not top_books:
+                return Response({'results': [], 'suggestions': []})
+
+            # Récupérer les suggestions depuis TableJaccard
+            suggestions = {}
+            for book_id in top_books:
+                book = BookText.objects.get(gutenberg_id=book_id)
+                neighbors = TableJaccard.objects.filter(
+                    models.Q(book1=book) | models.Q(book2=book)
+                ).select_related('book1', 'book2')
+                for sim in neighbors:
+                    neighbor = sim.book2 if sim.book1 == book else sim.book1
+                    if neighbor.gutenberg_id not in top_books and neighbor.gutenberg_id not in suggestions:
+                        suggestions[neighbor.gutenberg_id] = {
+                            'id': neighbor.gutenberg_id,
+                            'title': neighbor.title,
+                            'authors': neighbor.authors,
+                            'language': neighbor.language
+                        }
+
+            suggestion_list = list(suggestions.values())
+            return Response({'results': results, 'suggestions': suggestion_list})
+        except TableIndex.DoesNotExist:
             return Response({'results': [], 'suggestions': []})
-
-        # Construire un graphe de similarité
-        graph = self.build_graph(books)
-        pagerank = self.manual_pagerank(graph)
-
-        # Ajouter PageRank aux résultats
-        for res in results:
-            res['pagerank'] = pagerank.get(res['id'], 0)
-        results = sorted(results, key=lambda x: x['pagerank'], reverse=True)
-
-        # Suggestions : voisins des top 3
-        top_ids = [r['id'] for r in results[:3]]
-        suggestions = []
-        seen = set(top_ids)
-        for book in books:
-            if book.gutenberg_id not in seen and book.gutenberg_id in graph:
-                if any(neighbor in top_ids for neighbor in graph[book.gutenberg_id]):
-                    suggestions.append({
-                        'id': book.gutenberg_id,
-                        'title': book.title,
-                        'author': book.author
-                    })
-                    seen.add(book.gutenberg_id)
-
-        return Response({'results': results[:10], 'suggestions': suggestions[:5]})
