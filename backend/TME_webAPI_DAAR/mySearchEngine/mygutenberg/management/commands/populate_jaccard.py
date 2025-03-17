@@ -7,7 +7,7 @@ class Command(BaseCommand):
     help = 'Remplit la table TableJaccard avec les similarités de Jaccard entre les livres'
 
     def handle(self, *args, **options):
-        threshold = 0.51
+        threshold = 0.41
         self.stdout.write(f"Calcul des similarités de Jaccard avec un seuil de {threshold}...")
 
         # Récupérer tous les livres et indices
@@ -21,6 +21,9 @@ class Command(BaseCommand):
 
         # Calculer les similarités
         similarities = compute_jaccard_similarity(book_ids, table_indices)
+        if similarities is None:
+            self.stdout.write(self.style.ERROR("Erreur : compute_jaccard_similarity a retourné None"))
+            return
 
         # Vider l'ancienne table
         TableJaccard.objects.all().delete()
@@ -28,7 +31,8 @@ class Command(BaseCommand):
         # Remplir la table
         created_count = 0
         for (id1, id2), similarity in similarities.items():
-            if similarity >= threshold:  # Enregistrer uniquement si au-dessus du seuil
+            if similarity >= threshold:
+                self.stdout.write(f"Similarité trouvée entre {id1} et {id2}: {similarity}")
                 try:
                     book1 = BookText.objects.get(gutenberg_id=id1)
                     book2 = BookText.objects.get(gutenberg_id=id2)
@@ -43,6 +47,10 @@ class Command(BaseCommand):
                     continue
 
         self.stdout.write(self.style.SUCCESS(f"{created_count} similarités enregistrées avec succès."))
+
+        # Afficher le nombre de livres sans similarité
+        no_similarity_count = len(book_ids) - created_count
+        self.stdout.write(f"{no_similarity_count} livres sans similarité.")
 
         # Construire le graphe et calculer les centralités
         graph = build_graph(TableJaccard.objects.all())
@@ -61,4 +69,4 @@ class Command(BaseCommand):
 
             self.stdout.write(self.style.SUCCESS("Centralités calculées et enregistrées dans BookText."))
         else:
-            self.stdout.write(self.style.WARNING("Aucun graphe généré (seuil peut-être trop élevé)."))
+            self.stdout.write(self.style.WARNING("Aucun graphe généré."))

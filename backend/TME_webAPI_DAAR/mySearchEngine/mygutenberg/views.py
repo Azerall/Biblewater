@@ -136,10 +136,10 @@ class SearchByRegex(APIView):
             raise Http404("Invalid regex")
 
 class SearchWithRanking(APIView):
-    def get(self, request, keyword, sort_by, format=None):
+    def get(self, request, keyword, ranking, format=None):
         keyword = keyword.lower()
         valid_sort_options = ['occurrences', 'closeness', 'betweenness', 'pagerank']
-        if sort_by not in valid_sort_options:
+        if ranking not in valid_sort_options:
             return Response({'error': f"Critère de tri invalide. Options valides : {valid_sort_options}"}, status=400)
 
         try:
@@ -165,13 +165,13 @@ class SearchWithRanking(APIView):
                 return Response({'results': []})
 
             # Trier selon le critère choisi
-            if sort_by == 'occurrences':
+            if ranking == 'occurrences':
                 results = sorted(results, key=lambda x: x['occurrences'], reverse=True)
-            elif sort_by == 'closeness':
+            elif ranking == 'closeness':
                 results = sorted(results, key=lambda x: x['closeness'], reverse=True)
-            elif sort_by == 'betweenness':
+            elif ranking == 'betweenness':
                 results = sorted(results, key=lambda x: x['betweenness'], reverse=True)
-            elif sort_by == 'pagerank':
+            elif ranking == 'pagerank':
                 results = sorted(results, key=lambda x: x['pagerank'], reverse=True)
 
             return Response({'results': results})
