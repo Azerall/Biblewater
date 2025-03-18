@@ -4,21 +4,33 @@ import { useNavigate } from 'react-router-dom';
 const Home: React.FC = () => {
   const [query, setQuery] = useState<string>('');
   const [searchType, setSearchType] = useState<string>('Recherche');
+  const [rankingType, setRankingType] = useState<string>('occurrences'); // Nouvel état pour le critère de tri
   const navigate = useNavigate();
 
   const handleSearch = () => {
     if (query.trim()) {
-      const path = searchType === 'Recherche' ? `/search?query=${encodeURIComponent(query)}` :
-                     searchType === 'Recherche avancée' ? `/advanced?query=${encodeURIComponent(query)}` :
-                     searchType === 'Classement' ? `/ranking?query=${encodeURIComponent(query)}` :
-                     searchType === 'Suggestions' ? `/suggestions?query=${encodeURIComponent(query)}` :
-                     '/';
+      const basePath = searchType === 'Recherche'
+        ? `/search`
+        : searchType === 'Recherche avancée'
+        ? `/advanced`
+        : searchType === 'Classement'
+        ? `/ranking`
+        : searchType === 'Suggestions'
+        ? `/suggestions`
+        : '/';
+
+      const params = new URLSearchParams();
+      params.append('query', encodeURIComponent(query));
+      if (searchType === 'Classement') {
+        params.append('ranking', encodeURIComponent(rankingType)); // Ajout du paramètre ranking pour Classement
+      }
+
+      const path = `${basePath}?${params.toString()}`;
       navigate(path);
     }
   };
 
   return (
-    // <div className="min-h-screen bg-gradient-to-t from-teal-50 to-yellow-50 flex flex-col items-center justify-center">
     <div className="min-h-screen flex flex-col items-center justify-center">
       <header className="py-10 text-center">
         <h1 className="text-5xl font-extrabold text-teal-600 animate-bounce">
@@ -49,6 +61,50 @@ const Home: React.FC = () => {
               <option value="Suggestions">Suggestions</option>
             </select>
           </div>
+          {searchType === 'Classement' && (
+            <div className="flex justify-center space-x-8">
+              <label className="flex items-center space-x-2 text-teal-700 font-medium">
+                <input
+                  type="radio"
+                  value="occurrences"
+                  checked={rankingType === 'occurrences'}
+                  onChange={() => setRankingType('occurrences')}
+                  className="text-teal-600 focus:ring-teal-500"
+                />
+                <span>Occurrences</span>
+              </label>
+              <label className="flex items-center space-x-2 text-teal-700 font-medium">
+                <input
+                  type="radio"
+                  value="closeness"
+                  checked={rankingType === 'closeness'}
+                  onChange={() => setRankingType('closeness')}
+                  className="text-teal-600 focus:ring-teal-500"
+                />
+                <span>Closeness</span>
+              </label>
+              <label className="flex items-center space-x-2 text-teal-700 font-medium">
+                <input
+                  type="radio"
+                  value="betweenness"
+                  checked={rankingType === 'betweenness'}
+                  onChange={() => setRankingType('betweenness')}
+                  className="text-teal-600 focus:ring-teal-500"
+                />
+                <span>Betweenness</span>
+              </label>
+              <label className="flex items-center space-x-2 text-teal-700 font-medium">
+                <input
+                  type="radio"
+                  value="pagerank"
+                  checked={rankingType === 'pagerank'}
+                  onChange={() => setRankingType('pagerank')}
+                  className="text-teal-600 focus:ring-teal-500"
+                />
+                <span>PageRank</span>
+              </label>
+            </div>
+          )}
           <button
             onClick={handleSearch}
             className="w-full px-8 py-4 bg-teal-600 text-white font-bold rounded-xl shadow-md hover:bg-teal-700 hover:rotate-2 transition-all duration-300"
