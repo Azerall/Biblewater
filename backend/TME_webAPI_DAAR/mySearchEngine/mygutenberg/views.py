@@ -1,14 +1,13 @@
 import requests
 import re
+from collections import defaultdict
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import Http404
 from django.db import models
 from mygutenberg.models import BookText, TableIndex, TableJaccard
-from mygutenberg.algorithms.centrality import build_graph, closeness_centrality, betweenness_centrality, pagerank
-
-# URL de base pour l'API Gutendex
-base_url = 'https://gutendex.com/books/'
+from mygutenberg.clean_content import nettoyer_texte
+from mygutenberg.algorithms.automaton import build_dfa_from_regex
 
 class BooksList(APIView):
     def get(self, request, format=None):
@@ -17,7 +16,8 @@ class BooksList(APIView):
             'id': book.gutenberg_id,
             'title': book.title,
             'authors': book.authors,
-            'language': book.language
+            'language': book.language,
+            'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
         } for book in books])
 
 class BookDetail(APIView):
@@ -31,7 +31,8 @@ class BookDetail(APIView):
                 'title': book.title,
                 'authors': book.authors,
                 'language': book.language,
-                'content': content
+                'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
+                'content': nettoyer_texte(content)
             })
         except BookText.DoesNotExist:
             raise Http404
@@ -45,7 +46,8 @@ class FrenchBooksList(APIView):
             'id': book.gutenberg_id,
             'title': book.title,
             'authors': book.authors,
-            'language': book.language
+            'language': book.language,
+            'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
         } for book in books])
 
 class EnglishBooksList(APIView):
@@ -55,53 +57,55 @@ class EnglishBooksList(APIView):
             'id': book.gutenberg_id,
             'title': book.title,
             'authors': book.authors,
-            'language': book.language
+            'language': book.language,
+            'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
         } for book in books])
-
-class BookCoverImage(APIView):
-    def get(self, request, book_id, format=None):
-        try:
-            book = BookText.objects.get(gutenberg_id=book_id)
-            gutendex_url = f'https://gutendex.com/books/{book_id}/'
-            response = requests.get(gutendex_url)
-            response.raise_for_status()
-            book_data = response.json()
-            formats = book_data.get('formats', {})
-            cover_url = formats.get('image/jpeg', None)
-            if not cover_url:
-                cover_url = f'https://gutenberg.org/files/{book_id}/{book_id}-h/images/cover.jpg'
-                try:
-                    requests.head(cover_url).raise_for_status()
-                except requests.RequestException:
-                    cover_url = None  # Pas de couverture trouvée
-            return Response({'id': book_id, 'cover_image': cover_url})
-        except BookText.DoesNotExist:
-            raise Http404
-        except requests.RequestException:
-            return Response({'error': 'Unable to fetch cover image'}, status=500)
 
 class SearchByKeyword(APIView):
     def get(self, request, keyword, format=None):
-        keyword = keyword.lower()
-        try:
-            index = TableIndex.objects.get(word=keyword)
-            index_data = index.get_index_data()  # {book_id: {occurrences, tfidf, score}}
-            results = []
-            for book_id, data in index_data.items():
+        keyword = keyword.lower().strip()
+        keywords = [k.strip() for k in re.split(r'[+\s,;/]+', keyword) if k.strip()]
+        
+        if not keywords:
+            return Response([])
+
+        # Dictionnaire pour agréger les résultats par livre
+        aggregated_results = defaultdict(lambda: {'score': 0.0, 'occurrences': 0})
+        
+        # Rechercher chaque mot-clé dans TableIndex
+        for kw in keywords:
+            try:
+                index = TableIndex.objects.get(word=kw)
+                index_data = index.get_index_data()  # {book_id: {occurrences, tfidf, score}}
+                for book_id, data in index_data.items():
+                    aggregated_results[book_id]['score'] += data['score']
+                    aggregated_results[book_id]['occurrences'] += data['occurrences']
+            except TableIndex.DoesNotExist:
+                continue  # Ignorer si un mot-clé n'existe pas
+
+        if not aggregated_results:
+            return Response([])  # Aucun résultat trouvé pour tous les mots
+
+        # Construire la liste des résultats
+        results = []
+        for book_id in aggregated_results:
+            try:
                 book = BookText.objects.get(gutenberg_id=book_id)
                 results.append({
                     'id': book.gutenberg_id,
                     'title': book.title,
                     'authors': book.authors,
                     'language': book.language,
-                    'score': data['score'],
-                    'occurrences': data['occurrences']
+                    'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
+                    'score': aggregated_results[book_id]['score'],  # Score agrégé
+                    'occurrences': aggregated_results[book_id]['occurrences']  # Occurrences totales
                 })
-            # Trier les résultats par score décroissant
-            results = sorted(results, key=lambda x: x['score'], reverse=True)
-            return Response(results)
-        except TableIndex.DoesNotExist:
-            return Response([])  # Aucun mot trouvé dans l’index
+            except BookText.DoesNotExist:
+                continue  # Ignorer si le livre n'existe pas
+
+        # Trier les résultats par score décroissant
+        results = sorted(results, key=lambda x: x['score'], reverse=True)
+        return Response(results)
 
 class SearchByRegex(APIView):
     def get(self, request, regex, format=None):
@@ -178,6 +182,50 @@ class SearchWithRanking(APIView):
         except TableIndex.DoesNotExist:
             return Response({'results': []})
 
+class SearchWithRanking(APIView):
+    def get(self, request, keyword, ranking, format=None):
+        keyword = keyword.lower()
+        valid_sort_options = ['occurrences', 'closeness', 'betweenness', 'pagerank']
+        if ranking not in valid_sort_options:
+            return Response({'error': f"Critère de tri invalide. Options valides : {valid_sort_options}"}, status=400)
+
+        try:
+            # Récupérer les résultats de recherche
+            index = TableIndex.objects.get(word=keyword)
+            index_data = index.get_index_data()
+            results = []
+            for book_id, data in index_data.items():
+                book = BookText.objects.get(gutenberg_id=book_id)
+                results.append({
+                    'id': book.gutenberg_id,
+                    'title': book.title,
+                    'authors': book.authors,
+                    'language': book.language,
+                    'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
+                    'score': data['score'],
+                    'occurrences': data['occurrences'],
+                    'closeness': book.closeness_centrality,
+                    'betweenness': book.betweenness_centrality,
+                    'pagerank': book.pagerank
+                })
+
+            if not results:
+                return Response({'results': []})
+
+            # Trier selon le critère choisi
+            if ranking == 'occurrences':
+                results = sorted(results, key=lambda x: x['occurrences'], reverse=True)
+            elif ranking == 'closeness':
+                results = sorted(results, key=lambda x: x['closeness'], reverse=True)
+            elif ranking == 'betweenness':
+                results = sorted(results, key=lambda x: x['betweenness'], reverse=True)
+            elif ranking == 'pagerank':
+                results = sorted(results, key=lambda x: x['pagerank'], reverse=True)
+
+            return Response({'results': results})
+        except TableIndex.DoesNotExist:
+            return Response({'results': []})
+
 class SearchWithSuggestions(APIView):
     def get(self, request, keyword, format=None):
         keyword = keyword.lower()
@@ -192,6 +240,7 @@ class SearchWithSuggestions(APIView):
                     'title': book.title,
                     'authors': book.authors,
                     'language': book.language,
+                    'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
                     'score': data['score'],
                     'occurrences': data['occurrences']
                 })
@@ -201,7 +250,7 @@ class SearchWithSuggestions(APIView):
             # Sélectionner les 3 premiers livres pour les suggestions
             top_books = [result['id'] for result in results[:min(3, len(results))]]
             if not top_books:
-                return Response({'results': [], 'suggestions': []})
+                return Response({'top_books': [], 'suggestions': []})
 
             # Récupérer les suggestions depuis TableJaccard
             suggestions = {}
@@ -221,6 +270,6 @@ class SearchWithSuggestions(APIView):
                         }
 
             suggestion_list = list(suggestions.values())
-            return Response({'results': results, 'suggestions': suggestion_list})
+            return Response({'top_books': top_books, 'suggestions': suggestion_list})
         except TableIndex.DoesNotExist:
-            return Response({'results': [], 'suggestions': []})
+            return Response({'top_books': [], 'suggestions': []})

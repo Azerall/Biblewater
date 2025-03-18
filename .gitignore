@@ -1,61 +1,24 @@
-# --------------------
-# FRONTEND (Vite + React)
-# --------------------
-
-# node_modules
-/frontend/node_modules/
-
-# Build output
-/frontend/dist/
-
-# Local env files
-/frontend/.env
-/frontend/.env.*
-
-
-# --------------------
-# BACKEND (Django REST Framework)
-# --------------------
-
 # Python cache
-/backend/__pycache__/
 **/__pycache__/
 *.py[cod]
 *$py.class
 
 # Virtualenv
-/backend/myTidyVEnv/
-
-# Local settings
-/backend/.env
-/backend/.env.*
-
-# Database
-/backend/TME_webAPI_DAAR/mySearchEngine/db.sqlite3
+**/myTidyVEnv/
 
 # Migrations (optional: keep if you want to track them)
-# /backend/app_name/migrations/
+# **/migrations/
 
 # VSCode settings (optional, if using VSCode)
 .vscode/
-
-# --------------------
-# GLOBAL (General)
-# --------------------
 
 # System files
 .DS_Store
 Thumbs.db
 
 # Logs
-*.log
+**/*.log
 
 # Env general
-.env
-.env.*
-
-# IDE
-.idea/
-*.iml
-*.sublime-workspace
-*.sublime-project
+**/.env
+**/.env.*

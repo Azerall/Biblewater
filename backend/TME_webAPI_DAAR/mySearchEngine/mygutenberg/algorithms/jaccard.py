@@ -29,7 +29,7 @@ def compute_jaccard_similarity(book_ids, table_indices):
             similarity = intersection / union if union > 0 else 0
             similarities[(id1, id2)] = similarity
             pair_count += 1
-            if pair_count % 10000 == 0:
+            if pair_count % 100000 == 0:
                 print(f"Paires calculées: {pair_count}/{total_pairs}, Dernière similarité: {similarity}")
 
     return similarities

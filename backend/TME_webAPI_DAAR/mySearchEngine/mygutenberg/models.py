@@ -1,5 +1,6 @@
 from django.db import models
 import json
+import zlib
 
 class BookText(models.Model):
     gutenberg_id = models.IntegerField(unique=True)
@@ -17,15 +18,25 @@ class BookText(models.Model):
 
 class TableIndex(models.Model):
     word = models.CharField(max_length=50, unique=True)
-    index_data = models.TextField(blank=True)  # JSON : {book_id: {occurrences, tfidf, score}}
+    index_data = models.BinaryField(blank=True)
 
+    # Décompression et désérialisation
     def get_index_data(self):
-        return json.loads(self.index_data) if self.index_data else {}
+        if self.index_data:
+            decompressed = zlib.decompress(self.index_data).decode('utf-8')
+            return json.loads(decompressed)
+        return {}
+
+    # Sérialisation et compression
+    def set_index_data(self, data):
+        json_str = json.dumps(data)
+        compressed = zlib.compress(json_str.encode('utf-8'))
+        self.index_data = compressed
 
 class TableJaccard(models.Model):
     book1 = models.ForeignKey(BookText, on_delete=models.CASCADE, related_name='similarities_as_book1')
     book2 = models.ForeignKey(BookText, on_delete=models.CASCADE, related_name='similarities_as_book2')
-    jaccard_similarity = models.FloatField()  # Score de similarité entre 0 et 1
+    jaccard_similarity = models.DecimalField(max_digits=5, decimal_places=4)
 
     class Meta:
         unique_together = ('book1', 'book2')

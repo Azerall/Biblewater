@@ -38,10 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'mytig.apps.MytigConfig',
-    'mygutenberg.apps.MygutenbergConfig',
-    'myImageBank.apps.MyimagebankConfig',
-    'corsheaders',
+    'mygutenberg.apps.MygutenbergConfig'
 ]
 
 MIDDLEWARE = [

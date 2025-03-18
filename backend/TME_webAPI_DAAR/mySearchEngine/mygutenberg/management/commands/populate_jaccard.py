@@ -4,11 +4,14 @@ from mygutenberg.algorithms.jaccard import compute_jaccard_similarity
 from mygutenberg.algorithms.centrality import build_graph, closeness_centrality, betweenness_centrality, pagerank
 
 class Command(BaseCommand):
-    help = 'Remplit la table TableJaccard avec les similarités de Jaccard entre les livres'
+    help = 'Remplit la table TableJaccard avec les similarités de Jaccard entre les livres, et calcule les centralités.'
 
     def handle(self, *args, **options):
-        threshold = 0.41
+        threshold = 0.35
         self.stdout.write(f"Calcul des similarités de Jaccard avec un seuil de {threshold}...")
+
+        # Vider l'ancienne table
+        TableJaccard.objects.all().delete()
 
         # Récupérer tous les livres et indices
         books = BookText.objects.all()
@@ -25,14 +28,11 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR("Erreur : compute_jaccard_similarity a retourné None"))
             return
 
-        # Vider l'ancienne table
-        TableJaccard.objects.all().delete()
-
         # Remplir la table
         created_count = 0
+        self.stdout.write(f"Enregistrement des similarités avec un seuil de {threshold}...")
         for (id1, id2), similarity in similarities.items():
             if similarity >= threshold:
-                self.stdout.write(f"Similarité trouvée entre {id1} et {id2}: {similarity}")
                 try:
                     book1 = BookText.objects.get(gutenberg_id=id1)
                     book2 = BookText.objects.get(gutenberg_id=id2)
@@ -42,15 +42,13 @@ class Command(BaseCommand):
                         jaccard_similarity=similarity
                     )
                     created_count += 1
+                    if created_count % 1000 == 0:
+                        self.stdout.write(f"{created_count + 1} similarités enregistrées...")
                 except BookText.DoesNotExist:
                     self.stdout.write(self.style.WARNING(f"Livre {id1} ou {id2} non trouvé."))
                     continue
 
         self.stdout.write(self.style.SUCCESS(f"{created_count} similarités enregistrées avec succès."))
-
-        # Afficher le nombre de livres sans similarité
-        no_similarity_count = len(book_ids) - created_count
-        self.stdout.write(f"{no_similarity_count} livres sans similarité.")
 
         # Construire le graphe et calculer les centralités
         graph = build_graph(TableJaccard.objects.all())

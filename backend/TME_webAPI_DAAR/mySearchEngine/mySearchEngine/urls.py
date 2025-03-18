@@ -18,7 +18,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('mytig.urls')),
-    path('gutenberg/', include('mygutenberg.urls')),
-    path('myImage/', include('myImageBank.urls')),
+    path('gutenberg/', include('mygutenberg.urls'))
 ]

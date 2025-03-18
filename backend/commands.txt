@@ -1,6 +1,9 @@
+python3 -m venv myTidyVEnv
 source myTidyVEnv/bin/activate
+pip3 install django djangorestframework requests
 
-python3 manage.py makemigrations mygutenberg
+cd Biblewater/backend/TME_webAPI_DAAR/mySearchEngine/
+python3 manage.py makemigrations
 python3 manage.py migrate
 python3 manage.py populate_and_index_books
 python3 manage.py populate_jaccard

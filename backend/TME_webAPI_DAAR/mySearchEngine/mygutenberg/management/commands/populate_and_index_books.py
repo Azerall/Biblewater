@@ -2,7 +2,6 @@ from django.core.management.base import BaseCommand
 import requests
 import time
 import re
-import json
 from collections import defaultdict
 from mygutenberg.models import BookText, TableIndex
 from mygutenberg.algorithms.tfidf import index_document
@@ -34,6 +33,9 @@ class Command(BaseCommand):
                 whitelist_data[lang] = set(line.strip().lower() for line in f if len(line.strip()) > 2)
             self.stdout.write(f"[{time.ctime()}] {len(whitelist_data[lang])} words loaded for {lang}.")
 
+        BookText.objects.all().delete()
+        TableIndex.objects.all().delete()
+        
         # Fetch and process books
         while books_added < target_count:
             self.stdout.write(f"[{time.ctime()}] Fetching page {page}...")
@@ -131,10 +133,13 @@ class Command(BaseCommand):
         self.stdout.write(f"[{time.ctime()}] Index built with {len(index)} unique words and {total_words_indexed} total entries.")
 
         # Save index
-        self.stdout.write(f"[{time.ctime()}] Saving index with {len(index)} entries...")
-        index_entries = [
-            TableIndex(word=word, index_data=json.dumps(index_data))
-            for word, index_data in index.items()
-        ]
-        TableIndex.objects.bulk_create(index_entries, batch_size=500, ignore_conflicts=True)
+        index_entries = []
+        for word, index_data in index.items():
+            entry = TableIndex(word=word)
+            entry.set_index_data(index_data)
+            index_entries.append(entry)
+
+        # Sauvegarde par lots (optimisé)
+        TableIndex.objects.bulk_create(index_entries, batch_size=1000, ignore_conflicts=True)
+
         self.stdout.write(self.style.SUCCESS(f"[{time.ctime()}] Successfully added and indexed {books_added} books!"))
