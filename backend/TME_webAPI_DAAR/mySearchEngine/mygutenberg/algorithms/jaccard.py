@@ -1,10 +1,7 @@
 from collections import defaultdict
 
 def compute_jaccard_similarity(book_ids, table_indices):
-    print(f"Nombre de TableIndex à traiter: {len(table_indices)}")
-    print(f"Nombre de livres à comparer: {len(book_ids)}")
-    
-    # Créer un dictionnaire pour stocker les ensembles de mots par livre
+     # Créer un dictionnaire pour stocker les ensembles de mots par livre
     word_sets = defaultdict(set)
     for index in table_indices:
         index_data = index.get_index_data()  # {book_id: {occurrences, tfidf, score}}
