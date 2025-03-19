@@ -224,7 +224,8 @@ class SearchWithSuggestions(APIView):
                             'id': neighbor.gutenberg_id,
                             'title': neighbor.title,
                             'authors': neighbor.authors,
-                            'language': neighbor.language
+                            'language': neighbor.language,
+                            'cover_url': f'https://gutenberg.org/files/{neighbor.gutenberg_id}/{neighbor.gutenberg_id}-h/images/cover.jpg',
                         }
 
             suggestion_list = list(suggestions.values())
