@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import noCoverImage from '../assets/no_cover.png';
+import { API_BASE_URL } from '../utils/apiUtils';
 
 interface Author {
   name: string;
@@ -10,6 +12,7 @@ interface Result {
   title: string;
   authors: Author[];
   language: string;
+  cover_url: string;
   score: number;
   occurrences: number;
 }
@@ -19,6 +22,7 @@ interface Suggestion {
   title: string;
   authors: Author[];
   language: string;
+  cover_url: string;
 }
 
 interface SuggestionResponse {
@@ -28,56 +32,54 @@ interface SuggestionResponse {
 
 const SearchSuggestions: React.FC = () => {
   const [query, setQuery] = useState<string>('');
-  const [word, setWord] = useState<string>(''); // Nouvel état pour le mot
+  const [word, setWord] = useState<string>(''); 
   const [searchType, setSearchType] = useState<string>('Suggestions');
-  const [rankingType, setRankingType] = useState<string>('occurrences'); // Nouvel état pour le critère de tri
-  const [results, setResults] = useState<Result[]>([]); // Nouvel état pour les résultats
+  const [rankingType, setRankingType] = useState<string>('occurrences'); 
+  const [results, setResults] = useState<Result[]>([]); 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState<number>(1); // Page actuelle pour les résultats
-  const [itemsPerPage] = useState<number>(9); // 9 livres par page pour les résultats
-  const [firstTime, setFirstTime] = useState<boolean>(true); // Nouvel état pour la première fois
+  const [currentPage, setCurrentPage] = useState<number>(1); 
+  const [currentSuggestionsPage, setCurrentSuggestionsPage] = useState<number>(1); 
+  const [itemsPerPage] = useState<number>(9); 
   const location = useLocation();
   const navigate = useNavigate();
+  const isInitialMount = useRef(true); 
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const q = params.get('query') || '';
-    setQuery(q);
-    if (q && firstTime) {
-      console.log("======= q =======", q);
-      setFirstTime(false);
+
+    if (isInitialMount.current && q) {
+      setQuery(q);
       fetchSuggestions(q);
+      isInitialMount.current = false; 
     }
   }, [location.search]);
 
   const fetchSuggestions = async (searchQuery: string) => {
     setLoading(true);
-    setError(null);
     try {
       if (!searchQuery.trim()) {
         throw new Error('La requête ne peut pas être vide.');
       }
 
-      const response = await fetch(`http://127.0.0.1:8000/gutenberg/search_with_suggestions/${encodeURIComponent(searchQuery)}/`);
+      const response = await fetch(`${API_BASE_URL}/search_with_suggestions/${encodeURIComponent(searchQuery)}/`);
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
       }
       const data: SuggestionResponse = await response.json();
       console.log("======= suggestions data =======", data);
 
-      // Filtrer les résultats pour retirer les livres présents dans suggestions
       const suggestionIds = new Set(data.suggestions.map(suggestion => suggestion.id));
       const filteredResults = data.results.filter(result => !suggestionIds.has(result.id));
 
       setResults(filteredResults || []);
       setSuggestions(data.suggestions || []);
       setWord(searchQuery);
-      setQuery(''); // Réinitialiser la requête pour éviter de recharger les suggestions
-      setCurrentPage(1); // Réinitialiser la page à 1 après une nouvelle recherche
+      setQuery(''); 
+      setCurrentPage(1); 
+      setCurrentSuggestionsPage(1); 
     } catch (err) {
-      setError('Aucune suggestion trouvée ou une erreur est survenue. Veuillez réessayer.');
       console.error('Erreur détaillée:', err);
       setResults([]);
       setSuggestions([]);
@@ -89,8 +91,9 @@ const SearchSuggestions: React.FC = () => {
   const handleNewSearch = async () => {
     if (query.trim()) {
       if (searchType === 'Suggestions') {
-        await fetchSuggestions(query); // Exécute la recherche directement
+        await fetchSuggestions(query);
       }
+
       const basePath =
         searchType === 'Recherche'
           ? `/search`
@@ -105,33 +108,47 @@ const SearchSuggestions: React.FC = () => {
       const params = new URLSearchParams();
       params.append('query', encodeURIComponent(query));
       if (searchType === 'Classement') {
-        params.append('ranking', encodeURIComponent(rankingType)); // Ajout du paramètre ranking pour Classement
+        params.append('ranking', encodeURIComponent(rankingType)); 
       }
 
       const path = `${basePath}?${params.toString()}`;
-      navigate(path);
+      navigate(path, { replace: true }); 
     }
   };
 
-  // Calculer les indices pour la pagination des résultats
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentResults = results.slice(indexOfFirstItem, indexOfLastItem);
+  const indexOfLastResult = currentPage * itemsPerPage;
+  const indexOfFirstResult = indexOfLastResult - itemsPerPage;
+  const currentResults = results.slice(indexOfFirstResult, indexOfLastResult);
 
-  // Calculer le nombre total de pages pour les résultats
-  const totalPages = Math.ceil(results.length / itemsPerPage);
+  const totalResultPages = Math.ceil(results.length / itemsPerPage);
 
-  // Aller à la page précédente
-  const handlePrevious = () => {
+  const indexOfLastSuggestion = currentSuggestionsPage * itemsPerPage;
+  const indexOfFirstSuggestion = indexOfLastSuggestion - itemsPerPage;
+  const currentSuggestions = suggestions.slice(indexOfFirstSuggestion, indexOfLastSuggestion);
+
+  const totalSuggestionPages = Math.ceil(suggestions.length / itemsPerPage);
+
+  const handlePreviousResult = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
     }
   };
 
-  // Aller à la page suivante
-  const handleNext = () => {
-    if (currentPage < totalPages) {
+  const handleNextResult = () => {
+    if (currentPage < totalResultPages) {
       setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousSuggestion = () => {
+    if (currentSuggestionsPage > 1) {
+      setCurrentSuggestionsPage(currentSuggestionsPage - 1);
+    }
+  };
+
+  const handleNextSuggestion = () => {
+    if (currentSuggestionsPage < totalSuggestionPages) {
+      setCurrentSuggestionsPage(currentSuggestionsPage + 1);
     }
   };
 
@@ -146,25 +163,28 @@ const SearchSuggestions: React.FC = () => {
         <div className="container mx-auto px-6">
           <div className="flex justify-center">
             <div className="w-full max-w-lg space-y-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Entrez votre recherche..."
-                  className="w-full p-4 text-lg bg-white border-2 border-teal-300 rounded-xl shadow-xl focus:outline-none focus:border-teal-500 transition-all duration-300"
-                />
-                <select
-                  value={searchType}
-                  onChange={(e) => setSearchType(e.target.value)}
-                  className="absolute right-2 top-2 p-2 bg-teal-300 text-white rounded-md shadow-md focus:outline-none hover:bg-teal-400 transition-all duration-300"
-                >
-                  <option value="Recherche">Recherche</option>
-                  <option value="Recherche avancée">Recherche avancée</option>
-                  <option value="Classement">Classement</option>
-                  <option value="Suggestions">Suggestions</option>
-                </select>
+              <div className="relative max-w-3xl mx-auto">
+                <div className="relative flex items-center w-full">
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Entrez votre recherche..."
+                    className="w-full p-4 pr-36 text-lg bg-white border-2 border-teal-200 rounded-xl shadow-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-300 transition-all duration-300"
+                  />
+                  <select
+                    value={searchType}
+                    onChange={(e) => setSearchType(e.target.value)}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-teal-500 text-white rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 hover:bg-teal-600 transition-all duration-300"
+                  >
+                    <option value="Recherche">Recherche</option>
+                    <option value="Recherche avancée">Recherche avancée</option>
+                    <option value="Classement">Classement</option>
+                    <option value="Suggestions">Suggestions</option>
+                  </select>
+                </div>
               </div>
+
               {searchType === 'Classement' && (
                 <div className="flex justify-center space-x-8">
                   <label className="flex items-center space-x-2 text-teal-700 font-medium">
@@ -229,14 +249,10 @@ const SearchSuggestions: React.FC = () => {
         </div>
       </div>
       <main className="container mx-auto px-6 py-12">
-        {error && (
-          <p className="text-center text-red-600 mb-4">{error}</p>
-        )}
         {loading ? (
           <p className="text-center text-gray-700">Chargement des suggestions...</p>
         ) : results.length > 0 || suggestions.length > 0 ? (
           <div className="mt-12 max-w-5xl mx-auto">
-            {/* Section pour les résultats */}
             {results.length > 0 && (
               <>
                 <h2 className="text-2xl font-semibold text-teal-700 mb-4">
@@ -249,6 +265,17 @@ const SearchSuggestions: React.FC = () => {
                       className="p-6 bg-white bg-opacity-90 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                     >
                       <div className="flex flex-col space-y-2">
+                        <div className="w-32 h-48 mx-auto mb-4">
+                          <img
+                            src={result.cover_url}
+                            alt={`Cover of ${result.title}`}
+                            className="object-cover rounded-md"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.currentTarget.src = noCoverImage;
+                            }}
+                          />
+                        </div>
                         <div className="flex justify-between items-center">
                           <h3 className="text-lg font-semibold text-teal-700">
                             {result.title}
@@ -260,6 +287,10 @@ const SearchSuggestions: React.FC = () => {
                         <p className="text-sm text-gray-500">Score: {result.score.toFixed(2)}</p>
                         <Link
                           to={`/book/${result.id}`}
+                          state={{
+                            searchQuery: word,
+                            searchType: 'suggestions', 
+                          }}
                           className="text-yellow-500 hover:text-yellow-600 font-medium text-right"
                         >
                           Lire
@@ -268,21 +299,20 @@ const SearchSuggestions: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-                {/* Contrôles de pagination pour les résultats */}
                 <div className="mt-6 flex justify-center items-center space-x-4">
                   <button
-                    onClick={handlePrevious}
+                    onClick={handlePreviousResult}
                     disabled={currentPage === 1}
                     className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300"
                   >
                     Précédent
                   </button>
                   <span className="text-teal-700 font-medium">
-                    Page {currentPage} / {totalPages}
+                    Page {currentPage} / {totalResultPages}
                   </span>
                   <button
-                    onClick={handleNext}
-                    disabled={currentPage === totalPages}
+                    onClick={handleNextResult}
+                    disabled={currentPage === totalResultPages}
                     className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300"
                   >
                     Suivant
@@ -290,19 +320,29 @@ const SearchSuggestions: React.FC = () => {
                 </div>
               </>
             )}
-            {/* Section pour les suggestions */}
             {suggestions.length > 0 && (
               <>
                 <h2 className="text-2xl font-semibold text-teal-700 mb-4 mt-8">
                   Suggestions similaires pour "{word}"
                 </h2>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {suggestions.map((suggestion) => (
+                  {currentSuggestions.map((suggestion) => (
                     <li
                       key={suggestion.id}
                       className="p-6 bg-white bg-opacity-90 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                     >
                       <div className="flex flex-col space-y-2">
+                        <div className="w-32 h-48 mx-auto mb-4">
+                          <img
+                            src={suggestion.cover_url}
+                            alt={`Cover of ${suggestion.title}`}
+                            className="object-cover rounded-md"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.currentTarget.src = noCoverImage;
+                            }}
+                          />
+                        </div>
                         <div className="flex justify-between items-center">
                           <h3 className="text-lg font-semibold text-teal-700">
                             {suggestion.title}
@@ -312,6 +352,10 @@ const SearchSuggestions: React.FC = () => {
                         <p className="text-sm text-gray-600">Auteur: {suggestion.authors[0]?.name || 'Inconnu'}</p>
                         <Link
                           to={`/book/${suggestion.id}`}
+                          state={{
+                            searchQuery: word,
+                            searchType: 'suggestions', 
+                          }}
                           className="text-yellow-500 hover:text-yellow-600 font-medium text-right"
                         >
                           Lire
@@ -320,6 +364,25 @@ const SearchSuggestions: React.FC = () => {
                     </li>
                   ))}
                 </ul>
+                <div className="mt-6 flex justify-center items-center space-x-4">
+                  <button
+                    onClick={handlePreviousSuggestion}
+                    disabled={currentSuggestionsPage === 1}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300"
+                  >
+                    Précédent
+                  </button>
+                  <span className="text-teal-700 font-medium">
+                    Page {currentSuggestionsPage} / {totalSuggestionPages}
+                  </span>
+                  <button
+                    onClick={handleNextSuggestion}
+                    disabled={currentSuggestionsPage === totalSuggestionPages}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300"
+                  >
+                    Suivant
+                  </button>
+                </div>
               </>
             )}
           </div>

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 const Home: React.FC = () => {
   const [query, setQuery] = useState<string>('');
   const [searchType, setSearchType] = useState<string>('Recherche');
-  const [rankingType, setRankingType] = useState<string>('occurrences'); // Nouvel état pour le critère de tri
+  const [rankingType, setRankingType] = useState<string>('occurrences'); 
   const navigate = useNavigate();
 
   const handleSearch = () => {
@@ -22,7 +22,7 @@ const Home: React.FC = () => {
       const params = new URLSearchParams();
       params.append('query', encodeURIComponent(query));
       if (searchType === 'Classement') {
-        params.append('ranking', encodeURIComponent(rankingType)); // Ajout du paramètre ranking pour Classement
+        params.append('ranking', encodeURIComponent(rankingType)); 
       }
 
       const path = `${basePath}?${params.toString()}`;
@@ -42,25 +42,28 @@ const Home: React.FC = () => {
       </header>
       <main className="container mx-auto px-6 py-12 flex-grow flex items-center justify-center">
         <div className="w-full max-w-lg space-y-6">
-          <div className="relative">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Entrez votre recherche..."
-              className="w-full p-4 text-lg bg-white border-2 border-teal-300 rounded-xl shadow-md focus:outline-none focus:border-teal-500 transition-all duration-300"
-            />
-            <select
-              value={searchType}
-              onChange={(e) => setSearchType(e.target.value)}
-              className="absolute right-2 top-2 p-2 bg-teal-300 text-white rounded-md shadow-md focus:outline-none hover:bg-teal-400 transition-all duration-300"
-            >
-              <option value="Recherche">Recherche</option>
-              <option value="Recherche avancée">Recherche avancée</option>
-              <option value="Classement">Classement</option>
-              <option value="Suggestions">Suggestions</option>
-            </select>
+          <div className="relative max-w-3xl mx-auto">
+            <div className="relative flex items-center w-full">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Entrez votre recherche..."
+                className="w-full p-4 pr-36 text-lg bg-white border-2 border-teal-200 rounded-xl shadow-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-300 transition-all duration-300"
+              />
+              <select
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value)}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-teal-500 text-white rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 hover:bg-teal-600 transition-all duration-300"
+              >
+                <option value="Recherche">Recherche</option>
+                <option value="Recherche avancée">Recherche avancée</option>
+                <option value="Classement">Classement</option>
+                <option value="Suggestions">Suggestions</option>
+              </select>
+            </div>
           </div>
+
           {searchType === 'Classement' && (
             <div className="flex justify-center space-x-8">
               <label className="flex items-center space-x-2 text-teal-700 font-medium">

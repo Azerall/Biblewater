@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import noCoverImage from '../assets/no_cover.png';
+import { API_BASE_URL } from '../utils/apiUtils';
 
 interface Author {
   name: string;
@@ -10,7 +12,7 @@ interface Result {
   title: string;
   authors: Author[];
   language: string;
-  content: string;
+  cover_url: string;
   score: number;
   occurrences: number;
   closeness: number;
@@ -20,33 +22,39 @@ interface Result {
 
 const SearchRanking: React.FC = () => {
   const [query, setQuery] = useState<string>('');
-  const [words, setWords] = useState<string>('');
-  const [rankingType, setRankingType] = useState<string>('occurrences'); // Critère sélectionné par l'utilisateur
-  const [lastRankingType, setLastRankingType] = useState<string>('occurrences'); // Critère utilisé pour la dernière recherche réussie
+  const [word, setWord] = useState<string>('');
+  const [rankingType, setRankingType] = useState<string>('occurrences');
+  const [lastRankingType, setLastRankingType] = useState<string>('occurrences');
   const [results, setResults] = useState<Result[]>([]);
   const [searchType, setSearchType] = useState<string>('Classement');
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState<number>(1); // Page actuelle
-  const [itemsPerPage] = useState<number>(9); // 9 livres par page
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage] = useState<number>(9);
   const location = useLocation();
   const navigate = useNavigate();
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const q = params.get('query') || '';
-    setQuery(q);
+
+    if (isInitialMount.current && q) {
+      const ranking = params.get('ranking') || 'occurrences';
+      setQuery(q);
+      setRankingType(ranking);
+      handleSearch(q, ranking);
+      isInitialMount.current = false;
+    }
   }, [location.search]);
 
   const handleSearch = async (searchQuery: string, ranking: string) => {
     setLoading(true);
-    setError(null);
     try {
       if (!searchQuery.trim()) {
         throw new Error('La requête ne peut pas être vide.');
       }
 
-      const response = await fetch(`http://127.0.0.1:8000/gutenberg/search_with_ranking/${encodeURIComponent(searchQuery)}/${encodeURIComponent(ranking)}/`);
+      const response = await fetch(`${API_BASE_URL}/search_with_ranking/${encodeURIComponent(searchQuery)}/${encodeURIComponent(ranking)}/`);
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
       }
@@ -56,16 +64,11 @@ const SearchRanking: React.FC = () => {
       }
       console.log("=============shibal ranking==================");
       setResults(data.results);
-      setLastRankingType(ranking); // Met à jour lastRankingType après une recherche réussie
-      setWords(searchQuery);
+      setLastRankingType(ranking);
+      setWord(searchQuery);
       setQuery('');
-      setCurrentPage(1); // Réinitialiser la page à 1 après une nouvelle recherche
+      setCurrentPage(1);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Aucun résultat trouvé ou une erreur est survenue. Veuillez réessayer.'
-      );
       console.error('Erreur détaillée:', err);
       setResults([]);
     } finally {
@@ -76,8 +79,9 @@ const SearchRanking: React.FC = () => {
   const handleNewSearch = async () => {
     if (query.trim()) {
       if (searchType === 'Classement') {
-        await handleSearch(query, rankingType); // Exécute la recherche directement
+        await handleSearch(query, rankingType);
       }
+
       const basePath =
         searchType === 'Recherche'
           ? `/search`
@@ -92,30 +96,26 @@ const SearchRanking: React.FC = () => {
       const params = new URLSearchParams();
       params.append('query', encodeURIComponent(query));
       if (searchType === 'Classement') {
-        params.append('ranking', encodeURIComponent(rankingType)); // Ajout du paramètre ranking pour Classement
+        params.append('ranking', encodeURIComponent(rankingType));
       }
 
       const path = `${basePath}?${params.toString()}`;
-      navigate(path);
+      navigate(path, { replace: true });
     }
   };
 
-  // Calculer les indices pour la pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentResults = results.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Calculer le nombre total de pages
   const totalPages = Math.ceil(results.length / itemsPerPage);
 
-  // Aller à la page précédente
   const handlePrevious = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
     }
   };
 
-  // Aller à la page suivante
   const handleNext = () => {
     if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
@@ -133,25 +133,28 @@ const SearchRanking: React.FC = () => {
         <div className="container mx-auto px-6">
           <div className="flex justify-center">
             <div className="w-full max-w-lg space-y-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Entrez votre recherche..."
-                  className="w-full p-4 text-lg bg-white border-2 border-teal-300 rounded-xl shadow-md focus:outline-none focus:border-teal-500 transition-all duration-300"
-                />
-                <select
-                  value={searchType}
-                  onChange={(e) => setSearchType(e.target.value)}
-                  className="absolute right-2 top-2 p-2 bg-teal-300 text-white rounded-md shadow-md focus:outline-none hover:bg-teal-400 transition-all duration-300"
-                >
-                  <option value="Recherche">Recherche</option>
-                  <option value="Recherche avancée">Recherche avancée</option>
-                  <option value="Classement">Classement</option>
-                  <option value="Suggestions">Suggestions</option>
-                </select>
+              <div className="relative max-w-3xl mx-auto">
+                <div className="relative flex items-center w-full">
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Entrez votre recherche..."
+                    className="w-full p-4 pr-36 text-lg bg-white border-2 border-teal-200 rounded-xl shadow-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-300 transition-all duration-300"
+                  />
+                  <select
+                    value={searchType}
+                    onChange={(e) => setSearchType(e.target.value)}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-teal-500 text-white rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 hover:bg-teal-600 transition-all duration-300"
+                  >
+                    <option value="Recherche">Recherche</option>
+                    <option value="Recherche avancée">Recherche avancée</option>
+                    <option value="Classement">Classement</option>
+                    <option value="Suggestions">Suggestions</option>
+                  </select>
+                </div>
               </div>
+
               {searchType === 'Classement' && (
                 <div className="flex justify-center space-x-8">
                   <label className="flex items-center space-x-2 text-teal-700 font-medium">
@@ -216,15 +219,12 @@ const SearchRanking: React.FC = () => {
         </div>
       </div>
       <main className="container mx-auto px-6 py-12">
-        {error && (
-          <p className="text-center text-red-600 mb-4">{error}</p>
-        )}
         {loading ? (
           <p className="text-center text-gray-700">Chargement des résultats...</p>
         ) : results.length > 0 ? (
           <>
             <h2 className="text-2xl font-semibold text-teal-700 mb-4">
-              Résultats pour "{words}" triés par {lastRankingType}
+              Résultats pour "{word}" triés par {lastRankingType}
             </h2>
             <ul className="mt-12 max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {currentResults.map((result) => (
@@ -233,17 +233,23 @@ const SearchRanking: React.FC = () => {
                   className="p-6 bg-white bg-opacity-90 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <div className="flex flex-col space-y-2">
+                    <div className="w-32 h-48 mx-auto mb-4">
+                      <img
+                        src={result.cover_url}
+                        alt={`Cover of ${result.title}`}
+                        className="object-cover rounded-md"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.src = noCoverImage;
+                        }}
+                      />
+                    </div>
                     <div className="flex justify-between items-center">
                       <h3 className="text-lg font-semibold text-teal-700">
                         {result.title}
                       </h3>
                       <span className="text-sm text-teal-500">({result.language})</span>
                     </div>
-                    <p className="text-sm text-gray-500">
-                      {result.content ? (result.content.length > 20
-                        ? `${result.content.slice(0, 20)}...`
-                        : result.content) : 'Aucun extrait disponible'}
-                    </p>
                     <p className="text-sm text-gray-600">Auteur: {result.authors[0]?.name || 'Inconnu'}</p>
                     {lastRankingType === 'occurrences' && (
                       <p className="text-sm text-gray-500">Occurrences: {result.occurrences}</p>
@@ -259,6 +265,11 @@ const SearchRanking: React.FC = () => {
                     )}
                     <Link
                       to={`/book/${result.id}`}
+                      state={{
+                        searchQuery: word,
+                        searchType: 'ranking',
+                        rankingType: rankingType,
+                      }}
                       className="text-yellow-500 hover:text-yellow-600 font-medium text-right"
                     >
                       Lire
@@ -267,7 +278,6 @@ const SearchRanking: React.FC = () => {
                 </li>
               ))}
             </ul>
-            {/* Contrôles de pagination simplifiés */}
             <div className="mt-6 flex justify-center items-center space-x-4">
               <button
                 onClick={handlePrevious}
@@ -289,7 +299,7 @@ const SearchRanking: React.FC = () => {
             </div>
           </>
         ) : (
-          <p className="text-center text-gray-700">Aucun résultat trouvé pour "{query}". Essayez une autre recherche.</p>
+          <p className="text-center text-gray-700">Aucun résultat trouvé pour "{word}". Essayez une autre recherche.</p>
         )}
       </main>
     </div>
