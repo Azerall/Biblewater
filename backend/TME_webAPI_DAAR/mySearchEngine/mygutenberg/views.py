@@ -126,6 +126,7 @@ class SearchByRegex(APIView):
                                 'title': book.title,
                                 'authors': book.authors,
                                 'language': book.language,
+                                'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
                                 'score': 0,
                                 'matches': 0
                             }
@@ -138,49 +139,6 @@ class SearchByRegex(APIView):
             return Response(results)
         except re.error:
             raise Http404("Invalid regex")
-
-class SearchWithRanking(APIView):
-    def get(self, request, keyword, ranking, format=None):
-        keyword = keyword.lower()
-        valid_sort_options = ['occurrences', 'closeness', 'betweenness', 'pagerank']
-        if ranking not in valid_sort_options:
-            return Response({'error': f"Critère de tri invalide. Options valides : {valid_sort_options}"}, status=400)
-
-        try:
-            # Récupérer les résultats de recherche
-            index = TableIndex.objects.get(word=keyword)
-            index_data = index.get_index_data()
-            results = []
-            for book_id, data in index_data.items():
-                book = BookText.objects.get(gutenberg_id=book_id)
-                results.append({
-                    'id': book.gutenberg_id,
-                    'title': book.title,
-                    'authors': book.authors,
-                    'language': book.language,
-                    'score': data['score'],
-                    'occurrences': data['occurrences'],
-                    'closeness': book.closeness_centrality,
-                    'betweenness': book.betweenness_centrality,
-                    'pagerank': book.pagerank
-                })
-
-            if not results:
-                return Response({'results': []})
-
-            # Trier selon le critère choisi
-            if ranking == 'occurrences':
-                results = sorted(results, key=lambda x: x['occurrences'], reverse=True)
-            elif ranking == 'closeness':
-                results = sorted(results, key=lambda x: x['closeness'], reverse=True)
-            elif ranking == 'betweenness':
-                results = sorted(results, key=lambda x: x['betweenness'], reverse=True)
-            elif ranking == 'pagerank':
-                results = sorted(results, key=lambda x: x['pagerank'], reverse=True)
-
-            return Response({'results': results})
-        except TableIndex.DoesNotExist:
-            return Response({'results': []})
 
 class SearchWithRanking(APIView):
     def get(self, request, keyword, ranking, format=None):
