@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import Http404
 from django.db import models
-from mygutenberg.models import BookText, TableIndex, TableJaccard
+from mygutenberg.models import BookText, TableJaccard
 from mygutenberg.clean_content import nettoyer_texte
 from mygutenberg.algorithms.automaton import build_dfa_from_regex
 
@@ -229,6 +229,6 @@ class SearchWithSuggestions(APIView):
                         }
 
             suggestion_list = list(suggestions.values())
-            return Response({'top_books': top_books, 'suggestions': suggestion_list})
+            return Response({'results': results, 'suggestions': suggestion_list})
         except TableIndex.DoesNotExist:
-            return Response({'top_books': [], 'suggestions': []})
+            return Response({'results': [], 'suggestions': []})
