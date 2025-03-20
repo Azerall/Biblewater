@@ -51,14 +51,6 @@ class TrieNode(models.Model):
             return json.loads(decompressed)
         return {}
 
-    def get_full_word(self):
-        word = []
-        node = self
-        while node:
-            word.append(node.char)
-            node = node.parent
-        return ''.join(reversed(word))
-
     @classmethod
     def search_by_prefix(cls, prefix):
         if not prefix:

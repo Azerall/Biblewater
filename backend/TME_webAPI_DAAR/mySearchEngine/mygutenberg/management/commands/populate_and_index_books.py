@@ -16,7 +16,7 @@ class Command(BaseCommand):
 
         # Configuration
         base_url = 'https://gutendex.com/books/'
-        target_count = 10  # Objectif final : 1664 livres
+        target_count = 1664  # Objectif final : 1664 livres
         threshold = 0.35  # Seuil pour Jaccard
         page = 1
         books_added = 0

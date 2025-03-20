@@ -6,5 +6,4 @@ cd Biblewater/backend/TME_webAPI_DAAR/mySearchEngine/
 python3 manage.py makemigrations
 python3 manage.py migrate
 python3 manage.py populate_and_index_books
-python3 manage.py populate_jaccard
 python3 manage.py runserver
