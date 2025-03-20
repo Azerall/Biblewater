@@ -1,5 +1,7 @@
+from collections import defaultdict
+import time
 from django.core.management.base import BaseCommand
-from mygutenberg.models import BookText, TableIndex, TableJaccard
+from mygutenberg.models import BookText, TrieNode, TableJaccard
 from mygutenberg.algorithms.jaccard import compute_jaccard_similarity
 from mygutenberg.algorithms.centrality import build_graph, closeness_centrality, betweenness_centrality, pagerank
 
@@ -8,29 +10,43 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         threshold = 0.35
-        self.stdout.write(f"Calcul des similarités de Jaccard avec un seuil de {threshold}...")
+        self.stdout.write(f"[{time.ctime()}] Calcul des similarités de Jaccard avec un seuil de {threshold}...")
 
         # Vider l'ancienne table
         TableJaccard.objects.all().delete()
 
-        # Récupérer tous les livres et indices
+        # Récupérer tous les livres
         books = BookText.objects.all()
         book_ids = [book.gutenberg_id for book in books]
-        table_indices = TableIndex.objects.all()
 
-        if not book_ids or not table_indices:
-            self.stdout.write(self.style.ERROR("Aucun livre ou index trouvé dans la base de données."))
+        if not book_ids:
+            self.stdout.write(self.style.ERROR("Aucun livre trouvé dans la base de données."))
             return
 
-        # Calculer les similarités
-        similarities = compute_jaccard_similarity(book_ids, table_indices)
+        # Construire un index des mots par livre à partir de TrieNode
+        self.stdout.write(f"[{time.ctime()}] Construction de l'index des mots par livre depuis TrieNode...")
+        word_index = defaultdict(set)  # {mot: ensemble des gutenberg_id}
+        end_nodes = TrieNode.objects.filter(is_end_of_word=True).prefetch_related('parent')
+        for node in end_nodes:
+            word = node.get_full_word()
+            word_data = node.get_word_data()
+            for book_id in word_data.keys():
+                word_index[word].add(int(book_id))
+
+        if not word_index:
+            self.stdout.write(self.style.ERROR("Aucun mot indexé trouvé dans TrieNode."))
+            return
+
+        # Calculer les similarités de Jaccard
+        self.stdout.write(f"[{time.ctime()}] Calcul des similarités de Jaccard...")
+        similarities = compute_jaccard_similarity(book_ids, word_index)
         if similarities is None:
             self.stdout.write(self.style.ERROR("Erreur : compute_jaccard_similarity a retourné None"))
             return
 
-        # Remplir la table
+        # Remplir la table TableJaccard
         created_count = 0
-        self.stdout.write(f"Enregistrement des similarités avec un seuil de {threshold}...")
+        self.stdout.write(f"[{time.ctime()}] Enregistrement des similarités avec un seuil de {threshold}...")
         for (id1, id2), similarity in similarities.items():
             if similarity >= threshold:
                 try:
@@ -43,14 +59,15 @@ class Command(BaseCommand):
                     )
                     created_count += 1
                     if created_count % 1000 == 0:
-                        self.stdout.write(f"{created_count + 1} similarités enregistrées...")
+                        self.stdout.write(f"[{time.ctime()}] {created_count} similarités enregistrées...")
                 except BookText.DoesNotExist:
-                    self.stdout.write(self.style.WARNING(f"Livre {id1} ou {id2} non trouvé."))
+                    self.stdout.write(self.style.WARNING(f"[{time.ctime()}] Livre {id1} ou {id2} non trouvé."))
                     continue
 
-        self.stdout.write(self.style.SUCCESS(f"{created_count} similarités enregistrées avec succès."))
+        self.stdout.write(self.style.SUCCESS(f"[{time.ctime()}] {created_count} similarités enregistrées avec succès."))
 
         # Construire le graphe et calculer les centralités
+        self.stdout.write(f"[{time.ctime()}] Construction du graphe et calcul des centralités...")
         graph = build_graph(TableJaccard.objects.all())
         if graph:
             # Calculer les centralités
@@ -65,6 +82,6 @@ class Command(BaseCommand):
                 book.pagerank = pagerank_scores.get(book.gutenberg_id, 0.0)
                 book.save()
 
-            self.stdout.write(self.style.SUCCESS("Centralités calculées et enregistrées dans BookText."))
+            self.stdout.write(self.style.SUCCESS(f"[{time.ctime()}] Centralités calculées et enregistrées dans BookText."))
         else:
-            self.stdout.write(self.style.WARNING("Aucun graphe généré."))
+            self.stdout.write(self.style.WARNING(f"[{time.ctime()}] Aucun graphe généré."))
