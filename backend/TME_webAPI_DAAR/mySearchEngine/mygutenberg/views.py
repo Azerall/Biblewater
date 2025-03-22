@@ -19,6 +19,8 @@ class BooksList(APIView):
             'language': book.language,
             'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
             'word_count': book.word_count,
+            'closeness': book.closeness_centrality,
+            'betweenness': book.betweenness_centrality
         } for book in books])
 
 class BookDetail(APIView):
@@ -35,6 +37,8 @@ class BookDetail(APIView):
                 'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
                 'word_count': book.word_count,
                 'content': nettoyer_texte(content),
+                'closeness': book.closeness_centrality,
+                'betweenness': book.betweenness_centrality
             })
         except BookText.DoesNotExist:
             raise Http404
@@ -219,7 +223,7 @@ class SearchWithRanking(APIView):
             results = sorted(results, key=lambda x: x['closeness'], reverse=True)
         elif ranking == 'betweenness':
             results = sorted(results, key=lambda x: x['betweenness'], reverse=True)
-            
+
         return Response({'results': results})
 
 class SearchWithSuggestions(APIView):
