@@ -27,7 +27,7 @@
 Ce projet utilise **Git LFS** pour stocker la base de données. Avant de cloner le dépôt, assurez-vous d’avoir installé **Git LFS** :  
 ```sh
 git lfs install
-git clone <URL_DU_REPO>
+git clone https://github.com/Azerall/Biblewater.git
 git lfs pull
 ```
 
