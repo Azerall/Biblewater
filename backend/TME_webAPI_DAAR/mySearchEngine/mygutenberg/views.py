@@ -18,6 +18,7 @@ class BooksList(APIView):
             'authors': book.authors,
             'language': book.language,
             'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
+            'word_count': book.word_count,
         } for book in books])
 
 class BookDetail(APIView):
@@ -32,7 +33,8 @@ class BookDetail(APIView):
                 'authors': book.authors,
                 'language': book.language,
                 'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
-                'content': nettoyer_texte(content)
+                'word_count': book.word_count,
+                'content': nettoyer_texte(content),
             })
         except BookText.DoesNotExist:
             raise Http404
@@ -48,6 +50,7 @@ class FrenchBooksList(APIView):
             'authors': book.authors,
             'language': book.language,
             'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
+            'word_count': book.word_count,
         } for book in books])
 
 class EnglishBooksList(APIView):
@@ -59,6 +62,7 @@ class EnglishBooksList(APIView):
             'authors': book.authors,
             'language': book.language,
             'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
+            'word_count': book.word_count,
         } for book in books])
 
 class SearchByKeyword(APIView):
@@ -95,6 +99,7 @@ class SearchByKeyword(APIView):
                     'authors': book.authors,
                     'language': book.language,
                     'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
+                    'word_count': book.word_count,
                     'score': aggregated_results[book_id]['score'],  # Score agrégé
                     'occurrences': aggregated_results[book_id]['occurrences']  # Occurrences totales
                 })
@@ -131,6 +136,7 @@ class SearchByRegex(APIView):
                         'authors': book.authors,
                         'language': book.language,
                         'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
+                        'word_count': book.word_count,
                         'score': results[book_id]['score'],
                         'matches': results[book_id]['matches']
                     })
@@ -167,7 +173,7 @@ class SearchByRegex(APIView):
 class SearchWithRanking(APIView):
     def get(self, request, keyword, ranking, format=None):
         keyword = keyword.lower()
-        valid_sort_options = ['occurrences', 'closeness', 'betweenness', 'pagerank']
+        valid_sort_options = ['occurrences', 'closeness', 'betweenness']
         if ranking not in valid_sort_options:
             return Response({'error': f"Critère de tri invalide. Options valides : {valid_sort_options}"}, status=400)
 
@@ -194,11 +200,11 @@ class SearchWithRanking(APIView):
                     'authors': book.authors,
                     'language': book.language,
                     'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
+                    'word_count': book.word_count,
                     'score': aggregated_results[book_id]['score'],
                     'occurrences': aggregated_results[book_id]['occurrences'],
                     'closeness': book.closeness_centrality,
-                    'betweenness': book.betweenness_centrality,
-                    'pagerank': book.pagerank
+                    'betweenness': book.betweenness_centrality
                 })
             except BookText.DoesNotExist:
                 continue
@@ -213,9 +219,7 @@ class SearchWithRanking(APIView):
             results = sorted(results, key=lambda x: x['closeness'], reverse=True)
         elif ranking == 'betweenness':
             results = sorted(results, key=lambda x: x['betweenness'], reverse=True)
-        elif ranking == 'pagerank':
-            results = sorted(results, key=lambda x: x['pagerank'], reverse=True)
-
+            
         return Response({'results': results})
 
 class SearchWithSuggestions(APIView):
@@ -244,6 +248,7 @@ class SearchWithSuggestions(APIView):
                     'authors': book.authors,
                     'language': book.language,
                     'cover_url': f'https://gutenberg.org/files/{book.gutenberg_id}/{book.gutenberg_id}-h/images/cover.jpg',
+                    'word_count': book.word_count,
                     'score': aggregated_results[book_id]['score'],
                     'occurrences': aggregated_results[book_id]['occurrences']
                 })
@@ -274,6 +279,7 @@ class SearchWithSuggestions(APIView):
                         'authors': neighbor.authors,
                         'language': neighbor.language,
                         'cover_url': f'https://gutenberg.org/files/{neighbor.gutenberg_id}/{neighbor.gutenberg_id}-h/images/cover.jpg',
+                        'word_count': book.word_count,
                     }
 
         suggestion_list = list(suggestions.values())

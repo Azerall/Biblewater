@@ -11,7 +11,6 @@ class BookText(models.Model):
 
     closeness_centrality = models.FloatField(default=0.0)
     betweenness_centrality = models.FloatField(default=0.0)
-    pagerank = models.FloatField(default=0.0)
 
     class Meta:
         ordering = ('gutenberg_id',)

@@ -93,28 +93,3 @@ def bfs_with_predecessors(graph, start):
                 shortest_paths[neighbor] += shortest_paths[current]
                 predecessors[neighbor][start].append(current)
     return predecessors, shortest_paths
-
-def pagerank(graph, book_ids, damping=0.85, max_iter=100, tol=1e-6):
-    n = len(graph)
-    if n == 0:
-        return {book_id: 0 for book_id in book_ids}
-
-    # Initialisation des scores
-    pr = {node: 1/n for node in graph}
-    teleport = (1 - damping) / n
-
-    for _ in range(max_iter):
-        pr_new = {}
-        diff = 0
-        for node in graph:
-            rank = teleport
-            for neighbor in graph[node]:
-                if neighbor in pr:
-                    rank += damping * pr[neighbor] / len(graph[neighbor])
-            pr_new[node] = rank
-            diff += abs(pr_new[node] - pr[node])
-        pr = pr_new
-        if diff < tol:
-            break
-
-    return {book_id: pr[book_id] for book_id in book_ids}

@@ -6,7 +6,7 @@ from collections import defaultdict
 from mygutenberg.models import BookText, TableJaccard, TrieNode
 from mygutenberg.algorithms.tfidf import index_document
 from mygutenberg.algorithms.jaccard import compute_jaccard_similarity
-from mygutenberg.algorithms.centrality import build_graph, closeness_centrality, betweenness_centrality, pagerank
+from mygutenberg.algorithms.centrality import build_graph, closeness_centrality, betweenness_centrality
 
 class Command(BaseCommand):
     help = 'Remplit et indexe les livres Gutenberg, construit le Trie, et calcule les similarités Jaccard.'
@@ -80,8 +80,7 @@ class Command(BaseCommand):
                             word_count=len(filtered_words),
                             language=language,
                             closeness_centrality=0.0,
-                            betweenness_centrality=0.0,
-                            pagerank=0.0
+                            betweenness_centrality=0.0
                         )
 
                         books_added += 1
@@ -186,12 +185,10 @@ class Command(BaseCommand):
             book_ids = [book.gutenberg_id for book in books]
             closeness = closeness_centrality(graph, book_ids)
             betweenness = betweenness_centrality(graph, book_ids)
-            pagerank_scores = pagerank(graph, book_ids)
 
             for book in books:
                 book.closeness_centrality = closeness.get(book.gutenberg_id, 0.0)
                 book.betweenness_centrality = betweenness.get(book.gutenberg_id, 0.0)
-                book.pagerank = pagerank_scores.get(book.gutenberg_id, 0.0)
                 book.save()
 
             self.stdout.write(self.style.SUCCESS(f"[{time.ctime()}] Centralités calculées et enregistrées dans BookText."))
