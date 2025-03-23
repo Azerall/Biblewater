@@ -1,6 +1,5 @@
 import requests
 import re
-import logging
 from collections import defaultdict
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,7 +8,9 @@ from django.db import models
 from mygutenberg.models import BookText, TrieNode, TableJaccard
 from mygutenberg.clean_content import nettoyer_texte
 from mygutenberg.algorithms.automaton import build_dfa_from_regex
+from urllib.parse import unquote
 
+import logging
 logger = logging.getLogger(__name__)
 
 class BooksList(APIView):
@@ -74,8 +75,8 @@ class EnglishBooksList(APIView):
 
 class SearchByKeyword(APIView):
     def get(self, request, keyword, format=None):
-        keyword = keyword.lower().strip()
-        keywords = [k.strip() for k in re.split(r'[+\s,;/]+', keyword) if k.strip()]
+        decoded_keyword = unquote(keyword).lower().strip()
+        keywords = [k.strip() for k in re.split(r'[+\s,;/]+', decoded_keyword) if k.strip()]
 
         logger.info(f"Received query: {keyword}")
         logger.info(f"Recherche par mot-clé : {keywords}")
