@@ -7,6 +7,7 @@
 1️⃣ **Recherche simple** 🔍  
    - Recherche de livres par mot-clé.  
    - À partir d'une entrée texte `S`, l’application retourne la liste de tous les documents contenant `S`.  
+   - Peut également prendre en entrée une liste de mots, séparés par un espace, une virgule, un point-virgule ou un slash (ex : mot1, mot2; mot3 / mot4).
 
 2️⃣ **Recherche avancée (RegEx)** 🧐  
    - Recherche de livres par expression régulière (RegEx).  
