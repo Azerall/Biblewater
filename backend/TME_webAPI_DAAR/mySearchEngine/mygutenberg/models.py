@@ -4,7 +4,7 @@ import zlib
 
 class BookText(models.Model):
     gutenberg_id = models.IntegerField(unique=True)
-    title = models.CharField(max_length=500, blank=True)
+    title = models.CharField(max_length=200, blank=True)
     authors = models.JSONField(default=list, blank=True)
     word_count = models.IntegerField(default=0)
     language = models.CharField(max_length=2, choices=[('en', 'English'), ('fr', 'French')], default='en')
@@ -39,7 +39,7 @@ class TrieNode(models.Model):
     def set_word_data(self, data):
         if data:
             json_str = json.dumps(data)
-            compressed = zlib.compress(json_str.encode('utf-8'))
+            compressed = zlib.compress(json_str.encode('utf-8'), level=9)
             self.word_data = compressed
         else:
             self.word_data = None
@@ -86,7 +86,7 @@ class TrieNode(models.Model):
 class TableJaccard(models.Model):
     book1 = models.ForeignKey(BookText, on_delete=models.CASCADE, related_name='similarities_as_book1')
     book2 = models.ForeignKey(BookText, on_delete=models.CASCADE, related_name='similarities_as_book2')
-    jaccard_similarity = models.DecimalField(max_digits=5, decimal_places=4)
+    jaccard_similarity = models.DecimalField(max_digits=4, decimal_places=3)
 
     class Meta:
         unique_together = ('book1', 'book2')
