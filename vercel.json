@@ -3,7 +3,10 @@
   "builds": [
     {
       "src": "backend/TME_webAPI_DAAR/mySearchEngine/mySearchEngine/wsgi.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "buildCommand": "bash backend/TME_webAPI_DAAR/mySearchEngine/build.sh"
+      }
     }
   ],
   "routes": [
