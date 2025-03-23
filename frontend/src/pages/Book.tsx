@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 import noCoverImage from '../assets/no_cover.png';
 import back_bouton from '../assets/bouton_back.png';
+import { API_BASE_URL } from '../utils/apiUtils';
 
 interface Author {
   name: string;
@@ -73,7 +74,7 @@ const Book: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`http://127.0.0.1:8000/gutenberg/book/${id}/`);
+        const response = await fetch(`${API_BASE_URL}/book/${id}/`);
         if (!response.ok) {
           if (response.status === 404) {
             throw new Error('Livre non trouvé');
