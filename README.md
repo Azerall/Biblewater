@@ -4,7 +4,7 @@
 
 ---
 
-## 🌍 Accès à l'application
+## 🌍 Accès à l'application en ligne
 
 - **Frontend** : [Biblewater](https://azerall.github.io/Biblewater/)  
 - **Backend** : [API Biblewater](https://biblewater-phi.vercel.app/gutenberg/books/)  
