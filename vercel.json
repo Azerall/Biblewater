@@ -2,14 +2,17 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python"
+      "src": "backend/TME_webAPI_DAAR/mySearchEngine/mySearchEngine/wsgi.py",
+      "use": "@vercel/python",
+      "config": {
+        "buildCommand": "bash backend/TME_webAPI_DAAR/mySearchEngine/build.sh"
+      }
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "api/index.py"
+      "dest": "backend/TME_webAPI_DAAR/mySearchEngine/mySearchEngine/wsgi.py"
     }
   ]
 }
