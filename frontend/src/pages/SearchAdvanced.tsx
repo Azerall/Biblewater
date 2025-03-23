@@ -57,7 +57,6 @@ const SearchAdvanced: React.FC = () => {
         throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
       }
       const data: Result[] = await response.json();
-      console.log("======= regex data =======", data);
       setResults(data);
       setWord(searchQuery);
       setQuery(''); 

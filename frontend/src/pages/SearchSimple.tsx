@@ -44,7 +44,12 @@ const SearchSimple: React.FC = () => {
   const handleSearch = async (searchQuery: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/search/${encodeURIComponent(searchQuery.toLowerCase())}/`);
+      const decodedQuery = decodeURIComponent(searchQuery);
+      // Ré-encoder correctement après avoir mis en minuscules
+      const encodedQuery = encodeURIComponent(decodedQuery.toLowerCase());
+      console.log("Encoded query:", encodedQuery);
+      console.log("API URL:", `${API_BASE_URL}/search/${encodedQuery}/`);
+      const response = await fetch(`${API_BASE_URL}/search/${encodedQuery}/`);
       if (!response.ok) {
         throw new Error('Erreur lors de la recherche');
       }

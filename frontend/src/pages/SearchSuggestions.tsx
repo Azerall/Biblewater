@@ -67,7 +67,6 @@ const SearchSuggestions: React.FC = () => {
         throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
       }
       const data: SuggestionResponse = await response.json();
-      console.log("======= suggestions data =======", data);
 
       // Prendre uniquement les 3 premiers résultats pour filteredResults
       const suggestionIds = new Set(data.suggestions.map(suggestion => suggestion.id));
