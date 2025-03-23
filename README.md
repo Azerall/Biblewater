@@ -1,6 +1,6 @@
 # 📖 Bienvenue sur **Biblewater**  
 
-**Biblewater** est une application web et mobile permettant d'effectuer des recherches avancées dans une bibliothèque de 1664 livres sous format textuel.  
+**Biblewater** est une application web et mobile permettant d'effectuer des recherches avancées dans une bibliothèque de 1664 livres.  
 
 ## 🌟 Fonctionnalités principales  
 
