@@ -17,7 +17,6 @@ interface Result {
   occurrences: number;
   closeness: number;
   betweenness: number;
-  pagerank: number;
 }
 
 const SearchRanking: React.FC = () => {
@@ -133,30 +132,29 @@ const SearchRanking: React.FC = () => {
         <div className="container mx-auto px-6">
           <div className="flex justify-center">
             <div className="w-full max-w-lg space-y-4">
-              <div className="relative max-w-3xl mx-auto">
-                <div className="relative flex items-center w-full">
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Entrez votre recherche..."
-                    className="w-full p-4 pr-36 text-lg bg-white border-2 border-teal-200 rounded-xl shadow-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-300 transition-all duration-300"
-                  />
-                  <select
-                    value={searchType}
-                    onChange={(e) => setSearchType(e.target.value)}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-teal-500 text-white rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 hover:bg-teal-600 transition-all duration-300"
-                  >
-                    <option value="Recherche">Recherche</option>
-                    <option value="Recherche avancée">Recherche avancée</option>
-                    <option value="Classement">Classement</option>
-                    <option value="Suggestions">Suggestions</option>
-                  </select>
-                </div>
+            <div className="relative max-w-3xl mx-auto">
+              <div className="flex flex-col md:flex-row items-center w-full space-y-2 md:space-y-0 md:space-x-2">
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Entrez votre recherche..."
+                  className="w-full p-4 text-lg bg-white border-2 border-teal-200 rounded-xl shadow-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-300 transition-all duration-300 md:pr-40" // Ajusté pour une meilleure compatibilité avec la largeur du select
+                />
+                <select
+                  value={searchType}
+                  onChange={(e) => setSearchType(e.target.value)}
+                  className="w-full md:w-32 p-2 md:p-3 bg-teal-500 text-white rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 hover:bg-teal-600 transition-all duration-300 md:absolute md:right-4 md:top-1/2 md:transform md:-translate-y-1/2" // Ajusté right-4 et w-32 pour un meilleur centrage
+                >
+                  <option value="Recherche">Recherche</option>
+                  <option value="Recherche avancée">Recherche avancée</option>
+                  <option value="Classement">Classement</option>
+                  <option value="Suggestions">Suggestions</option>
+                </select>
               </div>
-
+            </div>
               {searchType === 'Classement' && (
-                <div className="flex justify-center space-x-8">
+                <div className="flex justify-center flex-col md:flex-row md:space-x-8 space-y-4 md:space-y-0">
                   <label className="flex items-center space-x-2 text-teal-700 font-medium">
                     <input
                       type="radio"
@@ -187,16 +185,6 @@ const SearchRanking: React.FC = () => {
                     />
                     <span>Betweenness</span>
                   </label>
-                  <label className="flex items-center space-x-2 text-teal-700 font-medium">
-                    <input
-                      type="radio"
-                      value="pagerank"
-                      checked={rankingType === 'pagerank'}
-                      onChange={() => setRankingType('pagerank')}
-                      className="text-teal-600 focus:ring-teal-500"
-                    />
-                    <span>PageRank</span>
-                  </label>
                 </div>
               )}
               <button
@@ -222,10 +210,10 @@ const SearchRanking: React.FC = () => {
         {loading ? (
           <p className="text-center text-gray-700">Chargement des résultats...</p>
         ) : results.length > 0 ? (
-          <>
-            <h2 className="text-2xl font-semibold text-teal-700 mb-4">
-              Résultats pour "{word}" triés par {lastRankingType}
-            </h2>
+          <div className="mt-12 max-w-5xl mx-auto"> 
+          <h2 className="text-2xl font-semibold text-teal-700 mb-4">
+            Résultats pour "{word}"
+          </h2>
             <ul className="mt-12 max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {currentResults.map((result) => (
                 <li
@@ -259,9 +247,6 @@ const SearchRanking: React.FC = () => {
                     )}
                     {lastRankingType === 'betweenness' && (
                       <p className="text-sm text-gray-500">Betweenness: {result.betweenness.toFixed(2)}</p>
-                    )}
-                    {lastRankingType === 'pagerank' && (
-                      <p className="text-sm text-gray-500">PageRank: {result.pagerank.toFixed(2)}</p>
                     )}
                     <Link
                       to={`/book/${result.id}`}
@@ -297,7 +282,7 @@ const SearchRanking: React.FC = () => {
                 Suivant
               </button>
             </div>
-          </>
+          </div>
         ) : (
           <p className="text-center text-gray-700">Aucun résultat trouvé pour "{word}". Essayez une autre recherche.</p>
         )}
