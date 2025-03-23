@@ -39,7 +39,6 @@ const SearchSuggestions: React.FC = () => {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1); 
-  const [currentSuggestionsPage, setCurrentSuggestionsPage] = useState<number>(1); 
   const [itemsPerPage] = useState<number>(9); 
   const location = useLocation();
   const navigate = useNavigate();
@@ -73,12 +72,13 @@ const SearchSuggestions: React.FC = () => {
       const suggestionIds = new Set(data.suggestions.map(suggestion => suggestion.id));
       const filteredResults = data.results.filter(result => !suggestionIds.has(result.id));
 
+      const topSuggestions = (data.suggestions || []).slice(0, 3);
+
       setResults(filteredResults || []);
-      setSuggestions(data.suggestions || []);
+      setSuggestions(topSuggestions);
       setWord(searchQuery);
       setQuery(''); 
       setCurrentPage(1); 
-      setCurrentSuggestionsPage(1); 
     } catch (err) {
       console.error('Erreur détaillée:', err);
       setResults([]);
@@ -122,12 +122,6 @@ const SearchSuggestions: React.FC = () => {
 
   const totalResultPages = Math.ceil(results.length / itemsPerPage);
 
-  const indexOfLastSuggestion = currentSuggestionsPage * itemsPerPage;
-  const indexOfFirstSuggestion = indexOfLastSuggestion - itemsPerPage;
-  const currentSuggestions = suggestions.slice(indexOfFirstSuggestion, indexOfLastSuggestion);
-
-  const totalSuggestionPages = Math.ceil(suggestions.length / itemsPerPage);
-
   const handlePreviousResult = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
@@ -137,18 +131,6 @@ const SearchSuggestions: React.FC = () => {
   const handleNextResult = () => {
     if (currentPage < totalResultPages) {
       setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const handlePreviousSuggestion = () => {
-    if (currentSuggestionsPage > 1) {
-      setCurrentSuggestionsPage(currentSuggestionsPage - 1);
-    }
-  };
-
-  const handleNextSuggestion = () => {
-    if (currentSuggestionsPage < totalSuggestionPages) {
-      setCurrentSuggestionsPage(currentSuggestionsPage + 1);
     }
   };
 
@@ -163,27 +145,27 @@ const SearchSuggestions: React.FC = () => {
         <div className="container mx-auto px-6">
           <div className="flex justify-center">
             <div className="w-full max-w-lg space-y-4">
-            <div className="relative max-w-3xl mx-auto">
-              <div className="flex flex-col md:flex-row items-center w-full space-y-2 md:space-y-0 md:space-x-2">
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Entrez votre recherche..."
-                  className="w-full p-4 text-lg bg-white border-2 border-teal-200 rounded-xl shadow-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-300 transition-all duration-300 md:pr-40" // Ajusté pour une meilleure compatibilité avec la largeur du select
-                />
-                <select
-                  value={searchType}
-                  onChange={(e) => setSearchType(e.target.value)}
-                  className="w-full md:w-32 p-2 md:p-3 bg-teal-500 text-white rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 hover:bg-teal-600 transition-all duration-300 md:absolute md:right-4 md:top-1/2 md:transform md:-translate-y-1/2" // Ajusté right-4 et w-32 pour un meilleur centrage
-                >
-                  <option value="Recherche">Recherche</option>
-                  <option value="Recherche avancée">Recherche avancée</option>
-                  <option value="Classement">Classement</option>
-                  <option value="Suggestions">Suggestions</option>
-                </select>
+              <div className="relative max-w-3xl mx-auto">
+                <div className="flex flex-col md:flex-row items-center w-full space-y-2 md:space-y-0 md:space-x-2">
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Entrez votre recherche..."
+                    className="w-full p-4 text-lg bg-white border-2 border-teal-200 rounded-xl shadow-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-300 transition-all duration-300 md:pr-40"
+                  />
+                  <select
+                    value={searchType}
+                    onChange={(e) => setSearchType(e.target.value)}
+                    className="w-full md:w-32 p-2 md:p-3 bg-teal-500 text-white rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-teal-300 hover:bg-teal-600 transition-all duration-300 md:absolute md:right-4 md:top-1/2 md:transform md:-translate-y-1/2"
+                  >
+                    <option value="Recherche">Recherche</option>
+                    <option value="Recherche avancée">Recherche avancée</option>
+                    <option value="Classement">Classement</option>
+                    <option value="Suggestions">Suggestions</option>
+                  </select>
+                </div>
               </div>
-            </div>
               {searchType === 'Classement' && (
                 <div className="flex justify-center flex-col md:flex-row md:space-x-8 space-y-4 md:space-y-0">
                   <label className="flex items-center space-x-2 text-teal-700 font-medium">
@@ -315,7 +297,7 @@ const SearchSuggestions: React.FC = () => {
                   Suggestions similaires pour "{word}"
                 </h2>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {currentSuggestions.map((suggestion) => (
+                  {suggestions.map((suggestion) => (
                     <li
                       key={suggestion.id}
                       className="p-6 bg-white bg-opacity-90 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
@@ -353,25 +335,6 @@ const SearchSuggestions: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-6 flex justify-center items-center space-x-4">
-                  <button
-                    onClick={handlePreviousSuggestion}
-                    disabled={currentSuggestionsPage === 1}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300"
-                  >
-                    Précédent
-                  </button>
-                  <span className="text-teal-700 font-medium">
-                    Page {currentSuggestionsPage} / {totalSuggestionPages}
-                  </span>
-                  <button
-                    onClick={handleNextSuggestion}
-                    disabled={currentSuggestionsPage === totalSuggestionPages}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300"
-                  >
-                    Suivant
-                  </button>
-                </div>
               </>
             )}
           </div>
