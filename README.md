@@ -1,12 +1,16 @@
 # 📖 Bienvenue sur **Biblewater**  
 
+🌍 **Accès à l'application**  
+- **Frontend** : [Biblewater](https://azerall.github.io/Biblewater/)  
+- **Backend** : [API Biblewater](https://biblewater-phi.vercel.app/gutenberg/books/)  
+
 **Biblewater** est une application web et mobile permettant d'effectuer des recherches avancées dans une bibliothèque de 1664 livres.  
 
 ## 🌟 Fonctionnalités principales  
 
 1️⃣ **Recherche simple** 🔍  
    - Recherche de livres par mot-clé.  
-   - À partir d'une entrée texte `S`, l’application retourne la liste de tous les documents contenant `S`.  
+   - À partir d'une entrée texte S, l’application retourne la liste de tous les documents contenant S.  
    - Peut également prendre en entrée une liste de mots, séparés par un espace, une virgule, un point-virgule ou un slash (ex : mot1, mot2; mot3 / mot4).
 
 2️⃣ **Recherche avancée (RegEx)** 🧐  
@@ -24,16 +28,6 @@
 
 ---
 
-## ⚠️ **Clonage du projet : Git LFS requis**  
-Ce projet utilise **Git LFS** pour stocker la base de données. Avant de cloner le dépôt, assurez-vous d’avoir installé **Git LFS** :  
-```sh
-git lfs install
-git clone https://github.com/Azerall/Biblewater.git
-git lfs pull
-```
-
----
-
 ## 🛠️ **Liste des pré-requis**  
 
 ### 🔹 **Backend (Django & DRF)**  
@@ -47,9 +41,10 @@ git lfs pull
 
 ---
 
-## 🚀 **Lancer l'application**  
+## 🚀 **Lancer l'application en local**  
 
 ### 🖥️ **Démarrer le backend (Django)**  
+
 ```sh
 python3 -m venv myTidyVEnv
 source myTidyVEnv/bin/activate
@@ -58,30 +53,33 @@ pip3 install django djangorestframework requests
 cd backend/TME_webAPI_DAAR/mySearchEngine
 python3 manage.py runserver
 ```
-Le serveur Django sera accessible sur `http://127.0.0.1:8000/gutenberg/`.  
+
+Le serveur Django sera accessible en local sur http://127.0.0.1:8000/gutenberg/.  
 
 #### 🌐 **Liste des URLs disponibles**  
-- `http://127.0.0.1:8000/gutenberg/books/`  
-- `http://127.0.0.1:8000/gutenberg/book/<id>`  
-- `http://127.0.0.1:8000/gutenberg/book/<id>/coverImage/`  
-- `http://127.0.0.1:8000/gutenberg/frenchbooks/`  
-- `http://127.0.0.1:8000/gutenberg/englishbooks/`  
-- `http://127.0.0.1:8000/gutenberg/search/<keyword>/`  
-- `http://127.0.0.1:8000/gutenberg/regex/<regex>/`  
-- `http://127.0.0.1:8000/gutenberg/search_with_ranking/<keyword>/<ranking>`  
-- `http://127.0.0.1:8000/gutenberg/search_with_suggestions/<keyword>`  
+- http://127.0.0.1:8000/gutenberg/books/  
+- http://127.0.0.1:8000/gutenberg/book/<id>  
+- http://127.0.0.1:8000/gutenberg/book/<id>/coverImage/  
+- http://127.0.0.1:8000/gutenberg/frenchbooks/  
+- http://127.0.0.1:8000/gutenberg/englishbooks/  
+- http://127.0.0.1:8000/gutenberg/search/<keyword>/  
+- http://127.0.0.1:8000/gutenberg/regex/<regex>/  
+- http://127.0.0.1:8000/gutenberg/search_with_ranking/<keyword>/<ranking>  
+- http://127.0.0.1:8000/gutenberg/search_with_suggestions/<keyword>  
 
-👉 **Note** : `ranking` peut être `occurrences`, `closeness` ou `betweenness`.  
+👉 **Note** : ranking peut être occurrences, closeness ou betweenness.  
 
 ---
 
 ### 🎨 **Démarrer le frontend (React + Vite)**  
+
 ```sh
 cd frontend
 npm install
 npm run dev
 ```
-L'interface sera accessible sur `http://localhost:5173/`.  
+
+L'interface sera accessible sur en local http://localhost:5173/.  
 
 ---
 
