@@ -25,7 +25,7 @@ SECRET_KEY = 'f%t0&fy4df2@#z@@&2g&rcu=@g27=h90=zr#hwyxz5w*3s)w9i'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.vercel.app']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'backend.TME_webAPI_DAAR.mySearchEngine.mygutenberg.apps.MygutenbergConfig'
+    'mygutenberg.apps.MygutenbergConfig'
 ]
 
 MIDDLEWARE = [
