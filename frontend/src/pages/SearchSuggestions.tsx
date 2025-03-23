@@ -69,12 +69,16 @@ const SearchSuggestions: React.FC = () => {
       const data: SuggestionResponse = await response.json();
       console.log("======= suggestions data =======", data);
 
+      // Prendre uniquement les 3 premiers résultats pour filteredResults
       const suggestionIds = new Set(data.suggestions.map(suggestion => suggestion.id));
-      const filteredResults = data.results.filter(result => !suggestionIds.has(result.id));
+      const filteredResults = (data.results || [])
+        .filter(result => !suggestionIds.has(result.id))
+        .slice(0, 3); // Limiter à 3 résultats
 
-      const topSuggestions = (data.suggestions || []).slice(0, 3);
+      // Prendre toutes les suggestions pour topSuggestions
+      const topSuggestions = data.suggestions || [];
 
-      setResults(filteredResults || []);
+      setResults(filteredResults);
       setSuggestions(topSuggestions);
       setWord(searchQuery);
       setQuery(''); 
@@ -96,14 +100,14 @@ const SearchSuggestions: React.FC = () => {
 
       const basePath =
         searchType === 'Recherche'
-          ? `/search`
+          ? `/Biblewater/search`
           : searchType === 'Recherche avancée'
-          ? `/advanced`
+          ? `/Biblewater/advanced`
           : searchType === 'Classement'
-          ? `/ranking`
+          ? `/Biblewater/ranking`
           : searchType === 'Suggestions'
-          ? `/suggestions`
-          : '/';
+          ? `/Biblewater/suggestions`
+          : '/Biblewater/';
 
       const params = new URLSearchParams();
       params.append('query', encodeURIComponent(query));
@@ -116,20 +120,21 @@ const SearchSuggestions: React.FC = () => {
     }
   };
 
-  const indexOfLastResult = currentPage * itemsPerPage;
-  const indexOfFirstResult = indexOfLastResult - itemsPerPage;
-  const currentResults = results.slice(indexOfFirstResult, indexOfLastResult);
+  // Appliquer la pagination aux suggestions (et non aux résultats)
+  const indexOfLastSuggestion = currentPage * itemsPerPage;
+  const indexOfFirstSuggestion = indexOfLastSuggestion - itemsPerPage;
+  const currentSuggestions = suggestions.slice(indexOfFirstSuggestion, indexOfLastSuggestion);
 
-  const totalResultPages = Math.ceil(results.length / itemsPerPage);
+  const totalSuggestionPages = Math.ceil(suggestions.length / itemsPerPage);
 
-  const handlePreviousResult = () => {
+  const handlePreviousSuggestion = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
     }
   };
 
-  const handleNextResult = () => {
-    if (currentPage < totalResultPages) {
+  const handleNextSuggestion = () => {
+    if (currentPage < totalSuggestionPages) {
       setCurrentPage(currentPage + 1);
     }
   };
@@ -209,7 +214,7 @@ const SearchSuggestions: React.FC = () => {
               </button>
               <div className="text-center">
                 <Link
-                  to="/"
+                  to="/Biblewater/"
                   className="text-teal-600 hover:text-teal-800 font-semibold transition-colors duration-300"
                 >
                   Retour à l’accueil
@@ -227,10 +232,10 @@ const SearchSuggestions: React.FC = () => {
             {results.length > 0 && (
               <>
                 <h2 className="text-2xl font-semibold text-teal-700 mb-4">
-                  Résultats pour "{word}"
+                  Top 3 des résultats pour "{word}"
                 </h2>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {currentResults.map((result) => (
+                  {results.map((result) => ( // Pas de pagination ici, car limité à 3 résultats
                     <li
                       key={result.id}
                       className="p-6 bg-white bg-opacity-90 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
@@ -257,7 +262,7 @@ const SearchSuggestions: React.FC = () => {
                         <p className="text-sm text-gray-500">Occurrences: {result.occurrences}</p>
                         <p className="text-sm text-gray-500">Score: {result.score.toFixed(2)}</p>
                         <Link
-                          to={`/book/${result.id}`}
+                          to={`/Biblewater/book/${result.id}`}
                           state={{
                             searchQuery: word,
                             searchType: 'suggestions', 
@@ -270,25 +275,6 @@ const SearchSuggestions: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-6 flex justify-center items-center space-x-4">
-                  <button
-                    onClick={handlePreviousResult}
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300"
-                  >
-                    Précédent
-                  </button>
-                  <span className="text-teal-700 font-medium">
-                    Page {currentPage} / {totalResultPages}
-                  </span>
-                  <button
-                    onClick={handleNextResult}
-                    disabled={currentPage === totalResultPages}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300"
-                  >
-                    Suivant
-                  </button>
-                </div>
               </>
             )}
             {suggestions.length > 0 && (
@@ -297,7 +283,7 @@ const SearchSuggestions: React.FC = () => {
                   Suggestions similaires pour "{word}"
                 </h2>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {suggestions.map((suggestion) => (
+                  {currentSuggestions.map((suggestion) => ( // Pagination appliquée ici
                     <li
                       key={suggestion.id}
                       className="p-6 bg-white bg-opacity-90 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
@@ -322,7 +308,7 @@ const SearchSuggestions: React.FC = () => {
                         </div>
                         <p className="text-sm text-gray-600">Auteur: {suggestion.authors[0]?.name || 'Inconnu'}</p>
                         <Link
-                          to={`/book/${suggestion.id}`}
+                          to={`Biblewater/book/${suggestion.id}`}
                           state={{
                             searchQuery: word,
                             searchType: 'suggestions', 
@@ -335,6 +321,25 @@ const SearchSuggestions: React.FC = () => {
                     </li>
                   ))}
                 </ul>
+                <div className="mt-6 flex justify-center items-center space-x-4">
+                  <button
+                    onClick={handlePreviousSuggestion}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300"
+                  >
+                    Précédent
+                  </button>
+                  <span className="text-teal-700 font-medium">
+                    Page {currentPage} / {totalSuggestionPages}
+                  </span>
+                  <button
+                    onClick={handleNextSuggestion}
+                    disabled={currentPage === totalSuggestionPages}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300"
+                  >
+                    Suivant
+                  </button>
+                </div>
               </>
             )}
           </div>

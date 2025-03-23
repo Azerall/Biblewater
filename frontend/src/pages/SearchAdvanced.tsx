@@ -78,14 +78,14 @@ const SearchAdvanced: React.FC = () => {
 
       const basePath =
         searchType === 'Recherche'
-          ? `/search`
+          ? `/Biblewater/search`
           : searchType === 'Recherche avancée'
-          ? `/advanced`
+          ? `/Biblewater/advanced`
           : searchType === 'Classement'
-          ? `/ranking`
+          ? `/Biblewater/ranking`
           : searchType === 'Suggestions'
-          ? `/suggestions`
-          : '/';
+          ? `/Biblewater/suggestions`
+          : '/Biblewater/';
 
       const params = new URLSearchParams();
       params.append('query', encodeURIComponent(query));
@@ -192,7 +192,7 @@ const SearchAdvanced: React.FC = () => {
               </button>
               <div className="text-center">
                 <Link
-                  to="/"
+                  to="/Biblewater/"
                   className="text-teal-600 hover:text-teal-800 font-semibold transition-colors duration-300"
                 >
                   Retour à l’accueil
@@ -238,7 +238,7 @@ const SearchAdvanced: React.FC = () => {
                     <p className="text-sm text-gray-500">Correspondances: {result.matches}</p>
                     <p className="text-sm text-gray-500">Score: {result.score.toFixed(2)}</p>
                     <Link
-                      to={`/book/${result.id}`}
+                      to={`/Biblewater/book/${result.id}`}
                       state={{
                         searchQuery: word,
                         searchType: 'advanced',

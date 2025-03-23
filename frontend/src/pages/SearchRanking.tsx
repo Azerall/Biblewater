@@ -61,7 +61,6 @@ const SearchRanking: React.FC = () => {
       if (!data.results || !Array.isArray(data.results)) {
         throw new Error('Réponse inattendue du serveur.');
       }
-      console.log("=============shibal ranking==================");
       setResults(data.results);
       setLastRankingType(ranking);
       setWord(searchQuery);
@@ -83,14 +82,14 @@ const SearchRanking: React.FC = () => {
 
       const basePath =
         searchType === 'Recherche'
-          ? `/search`
+          ? `/Biblewater/search`
           : searchType === 'Recherche avancée'
-          ? `/advanced`
+          ? `/Biblewater/advanced`
           : searchType === 'Classement'
-          ? `/ranking`
+          ? `/Biblewater/ranking`
           : searchType === 'Suggestions'
-          ? `/suggestions`
-          : '/';
+          ? `/Biblewater/suggestions`
+          : '/Biblewater/';
 
       const params = new URLSearchParams();
       params.append('query', encodeURIComponent(query));
@@ -196,7 +195,7 @@ const SearchRanking: React.FC = () => {
               </button>
               <div className="text-center">
                 <Link
-                  to="/"
+                  to="/Biblewater/"
                   className="text-teal-600 hover:text-teal-800 font-semibold transition-colors duration-300"
                 >
                   Retour à l’accueil
@@ -249,7 +248,7 @@ const SearchRanking: React.FC = () => {
                       <p className="text-sm text-gray-500">Betweenness: {result.betweenness.toFixed(2)}</p>
                     )}
                     <Link
-                      to={`/book/${result.id}`}
+                      to={`/Biblewater/book/${result.id}`}
                       state={{
                         searchQuery: word,
                         searchType: 'ranking',

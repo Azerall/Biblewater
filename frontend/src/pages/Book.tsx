@@ -32,7 +32,7 @@ const Book: React.FC = () => {
   }) || {};
 
   // Construire l'URL de retour en fonction du type de recherche
-  let returnUrl = '/'; // Par défaut, retourner à la page d'accueil
+  let returnUrl = '/Biblewater/'; // Par défaut, retourner à la page d'accueil
   let searchTypeLabel = 'recherche'; // Étiquette pour le type de recherche
   if (searchQuery && searchType) {
     const params = new URLSearchParams();
@@ -44,14 +44,14 @@ const Book: React.FC = () => {
 
     const basePath =
       searchType === 'simple'
-        ? '/search'
+        ? '/Biblewater/search'
         : searchType === 'advanced'
-        ? '/advanced'
+        ? '/Biblewater/advanced'
         : searchType === 'ranking'
-        ? '/ranking'
+        ? '/Biblewater/ranking'
         : searchType === 'suggestions'
-        ? '/suggestions'
-        : '/';
+        ? '/Biblewater/suggestions'
+        : '/Biblewater/';
 
     returnUrl = `${basePath}?${params.toString()}`;
 
@@ -81,7 +81,6 @@ const Book: React.FC = () => {
           throw new Error('Erreur lors de la récupération du livre');
         }
         const data: BookData = await response.json();
-        console.log("========== recup book data ==========", data);
         setBook(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Une erreur est survenue');
@@ -157,7 +156,7 @@ const Book: React.FC = () => {
   </div>
   <div className="text-center mt-8">
     <Link
-      to="/"
+      to="/Biblewater/"
       className="text-teal-600 hover:text-teal-800 font-semibold transition-colors duration-300"
     >
       Retour à l’accueil

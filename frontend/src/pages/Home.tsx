@@ -10,14 +10,14 @@ const Home: React.FC = () => {
   const handleSearch = () => {
     if (query.trim()) {
       const basePath = searchType === 'Recherche'
-        ? `/search`
+        ? `/Biblewater/search`
         : searchType === 'Recherche avancée'
-        ? `/advanced`
+        ? `/Biblewater/advanced`
         : searchType === 'Classement'
-        ? `/ranking`
+        ? `/Biblewater/ranking`
         : searchType === 'Suggestions'
-        ? `/suggestions`
-        : '/';
+        ? `/Biblewater/suggestions`
+        : '/Biblewater/';
 
       const params = new URLSearchParams();
       params.append('query', encodeURIComponent(query));
