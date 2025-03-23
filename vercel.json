@@ -5,7 +5,8 @@
       "src": "backend/TME_webAPI_DAAR/mySearchEngine/mySearchEngine/wsgi.py",
       "use": "@vercel/python",
       "config": {
-        "requirements": "backend/TME_webAPI_DAAR/mySearchEngine/requirements.txt"
+        "requirements": "backend/TME_webAPI_DAAR/mySearchEngine/mySearchEngine/requirements.txt",
+        "buildCommand": "pip install -r backend/TME_webAPI_DAAR/mySearchEngine/mySearchEngine/requirements.txt"
       }
     }
   ],
