@@ -1,10 +1,15 @@
 # 📖 Bienvenue sur **Biblewater**  
 
-🌍 **Accès à l'application**  
+**Biblewater** est une application web et mobile permettant d'effectuer des recherches avancées dans une bibliothèque de 1664 livres.  
+
+---
+
+## 🌍 Accès à l'application
+
 - **Frontend** : [Biblewater](https://azerall.github.io/Biblewater/)  
 - **Backend** : [API Biblewater](https://biblewater-phi.vercel.app/gutenberg/books/)  
 
-**Biblewater** est une application web et mobile permettant d'effectuer des recherches avancées dans une bibliothèque de 1664 livres.  
+---
 
 ## 🌟 Fonctionnalités principales  
 
