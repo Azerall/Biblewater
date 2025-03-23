@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'mygutenberg.apps.MygutenbergConfig'
+    'backend.TME_webAPI_DAAR.mySearchEngine.mygutenberg.apps.MygutenbergConfig'
 ]
 
 MIDDLEWARE = [
