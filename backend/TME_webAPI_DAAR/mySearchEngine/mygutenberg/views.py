@@ -124,7 +124,7 @@ class SearchByKeyword(APIView):
 class SearchByRegex(APIView):
     def get(self, request, regex, format=None):
         try:
-            dfa = build_dfa_from_regex(regex)
+            dfa = build_dfa_from_regex(regex.lower())
             if not dfa:
                 raise Http404("Invalid regex or DFA construction failed")
 
